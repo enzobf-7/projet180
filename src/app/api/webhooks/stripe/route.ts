@@ -12,13 +12,13 @@ export async function POST(request: NextRequest) {
   const body = await request.text()
   const sig = request.headers.get('stripe-signature')!
 
-  let event: Stripe.Event
+  let event: any
 
   try {
     event = stripe.webhooks.constructEvent(
       body,
       sig,
-      process.env.STRIPE_WEBHOOK_SECRET!
+      process.env.STRIPE_WEBHOOK_SECRET
     )
   } catch (err) {
     console.error('Stripe webhook signature verification failed:', err)
@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (event.type === 'checkout.session.completed') {
-    const session = event.data.object as Stripe.Checkout.Session
+    const session = event.data.object
 
     const email = session.customer_details?.email
     const name = session.customer_details?.name || ''
@@ -36,17 +36,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No email' }, { status: 400 })
     }
 
-    // Split name into first/last
     const nameParts = name.split(' ')
     const firstName = nameParts[0] || ''
     const lastName = nameParts.slice(1).join(' ') || ''
 
-    // Generate temporary password
     const tempPassword = generateTempPassword()
 
     const supabase = createAdminClient()
 
-    // 1. Create auth user
     const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
       email,
       password: tempPassword,
@@ -59,7 +56,6 @@ export async function POST(request: NextRequest) {
     })
 
     if (authError) {
-      // User might already exist
       if (authError.message.includes('already been registered')) {
         console.log('User already exists:', email)
         return NextResponse.json({ status: 'user_exists' })
@@ -70,23 +66,10 @@ export async function POST(request: NextRequest) {
 
     const userId = authUser.user.id
 
-    // 2. Create onboarding progress
-    await supabase.from('onboarding_progress').insert({
-      client_id: userId,
-    })
+    await supabase.from('onboarding_progress').insert({ client_id: userId })
+    await supabase.from('programs').insert({ client_id: userId, content: [] })
+    await supabase.from('gamification').insert({ client_id: userId })
 
-    // 3. Create empty program
-    await supabase.from('programs').insert({
-      client_id: userId,
-      content: [],
-    })
-
-    // 4. Create gamification record
-    await supabase.from('gamification').insert({
-      client_id: userId,
-    })
-
-    // 5. Send welcome email via Brevo
     await sendWelcomeEmail(email, firstName, tempPassword)
 
     console.log(`New client created: ${email} (${firstName} ${lastName})`)
@@ -126,7 +109,7 @@ async function sendWelcomeEmail(email: string, firstName: string, password: stri
               Tu viens de rejoindre le Gentleman Létal Club. La transformation commence maintenant.
             </p>
             <p style="color: #888; line-height: 1.7;">
-              Connecte-toi à ta plateforme et complète tes étapes de pré-onboarding. 
+              Connecte-toi et complète tes étapes de pré-onboarding. 
               Une fois terminé, le lien pour réserver ton premier call avec moi se débloque.
             </p>
             <div style="background: #141414; border: 1px solid #2A2A2A; border-radius: 12px; padding: 20px; margin: 24px 0;">
@@ -136,7 +119,7 @@ async function sendWelcomeEmail(email: string, firstName: string, password: stri
               <p style="margin: 8px 0 0; color: #888; font-size: 12px;">Change ton mot de passe après ta première connexion.</p>
             </div>
             <a href="${appUrl}" style="display: inline-block; background: #C41E2A; color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; margin-top: 8px;">
-              Accéder à ma plateforme →
+              Accéder à ma plateforme
             </a>
             <p style="color: #555; font-size: 13px; margin-top: 32px;">
               — Robin, Gentleman Létal Club
