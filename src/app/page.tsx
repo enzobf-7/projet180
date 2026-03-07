@@ -4,10 +4,14 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
+const DEMO_LOGIN_ENABLED =
+  process.env.NEXT_PUBLIC_SEED_TEST_USER === 'true'
+
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [demoLoading, setDemoLoading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
 
@@ -26,6 +30,40 @@ export default function LoginPage() {
     }
 
     router.refresh()
+  }
+
+  const handleDemoLogin = async () => {
+    setDemoLoading(true)
+    setError('')
+
+    try {
+      const res = await fetch('/api/dev/create-test-user', {
+        method: 'POST',
+      })
+
+      if (!res.ok) {
+        throw new Error('failed')
+      }
+
+      const { email: demoEmail, password: demoPassword } = await res.json()
+
+      const supabase = createClient()
+      const { error } = await supabase.auth.signInWithPassword({
+        email: demoEmail,
+        password: demoPassword,
+      })
+
+      if (error) {
+        setError(`Impossible de connecter l'utilisateur de démo.`)
+        return
+      }
+
+      router.refresh()
+    } catch {
+      setError(`Impossible de créer l'utilisateur de démo.`)
+    } finally {
+      setDemoLoading(false)
+    }
   }
 
   return (
@@ -87,7 +125,7 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || demoLoading}
               className="w-full py-3.5 bg-glc-accent hover:bg-glc-accent-hover text-white font-semibold rounded-xl transition-all duration-200 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
@@ -102,6 +140,17 @@ export default function LoginPage() {
                 'Se connecter'
               )}
             </button>
+
+            {DEMO_LOGIN_ENABLED && (
+              <button
+                type="button"
+                onClick={handleDemoLogin}
+                disabled={demoLoading || loading}
+                className="w-full py-3.5 border border-glc-border text-glc-muted rounded-xl text-sm hover:border-glc-accent/60 hover:text-glc-text transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {demoLoading ? 'Connexion de démo…' : 'Connexion de démo (auto)'}
+              </button>
+            )}
           </form>
         </div>
 

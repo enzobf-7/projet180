@@ -163,7 +163,11 @@ export default function OnboardingPage() {
 
   // ── Step 3/4 — Links ──
   async function handleLinkClick(step: 'step3_whatsapp' | 'step4_skool', url: string, next: Step) {
-    window.open(url, '_blank')
+    const safeUrl = url?.trim()
+    if (!safeUrl || safeUrl === '#') {
+      return
+    }
+    window.open(safeUrl, '_blank')
     await markStep(step)
     setProgress(prev => ({ ...prev, [step]: true }))
     setTimeout(() => setCurrentStep(next), 600)
@@ -527,13 +531,6 @@ function QSection1({ q, setQ }: { q: typeof initialQuestionnaire; setQ: (k: stri
         onChange={v => setQ('income', v)}
         options={['< 1 000€', '1 000€–3 000€', '3 000€–5 000€', '5 000€–10 000€', '10 000€+']}
       />
-      <QSelect
-        label="Comment nous as-tu découverts ?"
-        value={q.how_found}
-        onChange={v => setQ('how_found', v)}
-        options={['YouTube', 'Instagram', 'TikTok', 'Substack', 'Bouche-à-oreille', 'Autre']}
-      />
-      <QTextarea label="Pourquoi nous avoir choisis ?" value={q.why_us} onChange={v => setQ('why_us', v)} placeholder="Sois précis…" />
     </div>
   )
 }
@@ -649,6 +646,8 @@ function Step3Link({
 }) {
   if (done) return <StepDone label={`${title.split(' ')[2] || title} ✓`} onContinue={() => {}} />
 
+  const hasLink = !!url && url.trim() !== '' && url.trim() !== '#'
+
   return (
     <div className="space-y-6">
       <StepHeader
@@ -661,14 +660,22 @@ function Step3Link({
         <div className="text-5xl">{icon}</div>
         <p className="text-[#888888] text-sm leading-relaxed">{description}</p>
         <button
-          onClick={onConfirm}
-          className="w-full py-4 rounded-xl bg-[#C41E2A] hover:bg-[#E63946] text-white font-bold text-sm uppercase tracking-widest transition-all active:scale-[0.98]"
+          onClick={hasLink ? onConfirm : undefined}
+          disabled={!hasLink}
+          className="w-full py-4 rounded-xl font-bold text-sm uppercase tracking-widest transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed
+            bg-[#C41E2A] hover:bg-[#E63946] text-white"
         >
-          {cta} →
+          {hasLink ? `${cta} →` : 'Lien bientôt disponible'}
         </button>
-        <p className="text-xs text-[#555555]">
-          Le lien s'ouvre dans un nouvel onglet. Cette étape sera automatiquement validée.
-        </p>
+        {hasLink ? (
+          <p className="text-xs text-[#555555]">
+            Le lien s'ouvre dans un nouvel onglet. Cette étape sera automatiquement validée.
+          </p>
+        ) : (
+          <p className="text-xs text-[#555555]">
+            Le lien n&apos;est pas encore configuré. Tu pourras compléter cette étape dès qu&apos;il sera ajouté.
+          </p>
+        )}
       </div>
     </div>
   )
