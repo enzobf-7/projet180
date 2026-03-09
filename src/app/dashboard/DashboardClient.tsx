@@ -1,0 +1,1001 @@
+'use client'
+
+import { useState, useEffect, useTransition, useRef } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
+import { toggleHabitAction } from './actions'
+
+// ─── Design tokens ────────────────────────────────────────────────────────────
+const C = {
+  bg:      '#060606',
+  surface: '#0F0F0F',
+  sidebar: '#080808',
+  border:  '#1E1E1E',
+  muted:   '#484848',
+  dimmed:  '#161616',
+  text:    '#F0F0F0',
+  accent:  '#8B1A1A',
+  accentL: '#A32020',
+  gold:    '#C9A84C',
+  green:   '#15803D',
+  greenL:  '#22C55E',
+}
+const D = { fontFamily: '"Barlow Condensed", sans-serif' } as const
+const M = { fontFamily: '"JetBrains Mono", monospace' }    as const
+const XP_PER_HABIT = 10
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+interface Habit { id: string; name: string }
+interface Gamification {
+  xp_total: number; current_streak: number
+  longest_streak: number; level: number
+}
+interface LeaderboardEntry {
+  rank: number; clientId: string; firstName: string
+  xp: number; streak: number; isMe: boolean
+}
+interface Props {
+  jourX:             number
+  firstName:         string
+  gamification:      Gamification
+  habits:            Habit[]
+  completedHabitIds: string[]
+  responses:         Record<string, unknown>
+  leaderboard:       LeaderboardEntry[]
+  onboardingDate:    string | null
+  whatsappLink:      string | null
+}
+interface XPParticle { id: number; delta: number }
+
+// ─── Level system ─────────────────────────────────────────────────────────────
+const LEVELS = [
+  { name: 'Initié',          min: 0,     max: 500   },
+  { name: 'Soldat',          min: 500,   max: 1500  },
+  { name: 'Guerrier',        min: 1500,  max: 3000  },
+  { name: 'Combattant',      min: 3000,  max: 6000  },
+  { name: "Homme d'honneur", min: 6000,  max: 12000 },
+  { name: 'Gentleman Létal', min: 12000, max: Infinity },
+]
+
+const STREAK_MILESTONES = [7, 14, 21, 30, 60, 90]
+
+function getCurrentLevel(xp: number) {
+  return LEVELS.find(l => xp >= l.min && xp < l.max) ?? LEVELS[LEVELS.length - 1]
+}
+function getLevelProgress(xp: number) {
+  const lvl = getCurrentLevel(xp)
+  if (lvl.max === Infinity) return 100
+  return Math.round(((xp - lvl.min) / (lvl.max - lvl.min)) * 100)
+}
+function getNextLevel(xp: number) {
+  const lvl = getCurrentLevel(xp)
+  if (lvl.max === Infinity) return null
+  const idx = LEVELS.indexOf(lvl)
+  return { name: LEVELS[idx + 1]?.name ?? '', xpNeeded: lvl.max - xp }
+}
+
+// ─── useCountdown ─────────────────────────────────────────────────────────────
+function useCountdown(startDate: string | null) {
+  const [t, setT] = useState({ d: 0, h: 0, m: 0, s: 0 })
+  useEffect(() => {
+    const tick = () => {
+      if (!startDate) return
+      const diff = Math.max(0, new Date(startDate).getTime() + 180 * 86400000 - Date.now())
+      setT({
+        d: Math.floor(diff / 86400000),
+        h: Math.floor((diff % 86400000) / 3600000),
+        m: Math.floor((diff % 3600000) / 60000),
+        s: Math.floor((diff % 60000) / 1000),
+      })
+    }
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [startDate])
+  return t
+}
+const p2 = (n: number) => String(n).padStart(2, '0')
+
+// ─── useIsMobile ──────────────────────────────────────────────────────────────
+function useIsMobile() {
+  const [m, setM] = useState(false)
+  useEffect(() => {
+    const check = () => setM(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+  return m
+}
+
+// ─── AnimatedCounter ──────────────────────────────────────────────────────────
+function AnimatedCounter({ to, duration = 1200 }: { to: number; duration?: number }) {
+  const [count, setCount] = useState(0)
+  const prevRef = useRef(0)
+  useEffect(() => {
+    const from = prevRef.current
+    prevRef.current = to
+    const d = (from === 0 && to > 50) ? duration : 280
+    let start: number | null = null
+    let raf: number
+    const tick = (ts: number) => {
+      if (!start) start = ts
+      const p    = Math.min((ts - start) / d, 1)
+      const ease = 1 - Math.pow(1 - p, 4)
+      setCount(Math.round(from + ease * (to - from)))
+      if (p < 1) { raf = requestAnimationFrame(tick) }
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [to, duration])
+  return <>{count.toLocaleString('fr-FR')}</>
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
+export default function DashboardClient({
+  jourX, firstName, gamification, habits, completedHabitIds, responses,
+  leaderboard, onboardingDate, whatsappLink,
+}: Props) {
+  const router = useRouter()
+  const [, startTransition] = useTransition()
+  const [completed, setCompleted] = useState<Set<string>>(new Set(completedHabitIds))
+  const [loadingId, setLoadingId] = useState<string | null>(null)
+  const [localXP, setLocalXP] = useState(gamification.xp_total)
+  const [particles, setParticles] = useState<XPParticle[]>([])
+  const particleId = useRef(0)
+  const [celebrateRing, setCelebrateRing] = useState(false)
+  const [displayedLevelPct, setDisplayedLevelPct] = useState(0)
+  const isMobile = useIsMobile()
+  const countdown = useCountdown(onboardingDate)
+  const supabase  = createClient()
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.push('/')
+    router.refresh()
+  }
+
+  const handleToggle = (habitId: string) => {
+    if (loadingId) return
+    const wasCompleted = completed.has(habitId)
+    const delta = wasCompleted ? -XP_PER_HABIT : +XP_PER_HABIT
+    setCompleted(prev => {
+      const next = new Set(prev)
+      wasCompleted ? next.delete(habitId) : next.add(habitId)
+      return next
+    })
+    setLocalXP(prev => Math.max(0, prev + delta))
+    const pid = ++particleId.current
+    setParticles(p => [...p, { id: pid, delta }])
+    setTimeout(() => setParticles(p => p.filter(x => x.id !== pid)), 1500)
+    setLoadingId(habitId)
+    startTransition(async () => {
+      try {
+        await toggleHabitAction(habitId, !wasCompleted)
+      } catch {
+        setCompleted(prev => {
+          const next = new Set(prev)
+          wasCompleted ? next.add(habitId) : next.delete(habitId)
+          return next
+        })
+        setLocalXP(prev => Math.max(0, prev - delta))
+      } finally {
+        setLoadingId(null)
+      }
+    })
+  }
+
+  // Derived
+  const totalHabits    = habits.length
+  const completedCount = completed.size
+  const completedPct   = totalHabits > 0 ? Math.round((completedCount / totalHabits) * 100) : 0
+  const allDone        = totalHabits > 0 && completedCount === totalHabits
+  const daysPct        = Math.round((jourX / 180) * 100)
+  const daysLeft       = 180 - jourX
+  const xp             = gamification.xp_total
+  const level          = getCurrentLevel(xp)
+  const levelPct       = getLevelProgress(xp)
+  const nextLevel      = getNextLevel(xp)
+  const streak         = gamification.current_streak
+  const record         = gamification.longest_streak
+  const hotStreak      = streak >= 7
+  const legendStreak   = streak >= 30
+  const myRank         = leaderboard.find(e => e.isMe)?.rank ?? null
+  const maxXP          = leaderboard[0]?.xp || 1
+  const visionText     = (responses?.vision as string) ?? null
+  const objectifText   = (responses?.objectif_principal as string) ?? null
+
+  const navItems = [
+    { label: 'Dashboard',  href: '/dashboard',  active: true  },
+    { label: 'Programme',  href: '/programme',  active: false },
+    { label: 'Messagerie', href: '/messagerie', active: false },
+    { label: 'Profil',     href: '/profil',     active: false },
+  ]
+
+  const isFirstRun    = useRef(true)
+  const prevAllDoneRef = useRef(false)
+  const hasMounted    = useRef(false)
+
+  useEffect(() => {
+    if (isFirstRun.current) { isFirstRun.current = false; prevAllDoneRef.current = allDone; return }
+    if (allDone && !prevAllDoneRef.current) {
+      setCelebrateRing(true)
+      setTimeout(() => setCelebrateRing(false), 600)
+    }
+    prevAllDoneRef.current = allDone
+  }, [allDone])
+
+  useEffect(() => {
+    if (!hasMounted.current) {
+      hasMounted.current = true
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => setDisplayedLevelPct(levelPct))
+      })
+    } else {
+      setDisplayedLevelPct(levelPct)
+    }
+  }, [levelPct])
+
+  return (
+    <div style={{ display: 'flex', minHeight: '100vh', background: C.bg, color: C.text, overflowX: 'hidden' }}>
+
+      {/* ── CSS Animations ──────────────────────────────────────────────────── */}
+      <style>{`
+        @keyframes glc-fade {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0);   }
+        }
+        @keyframes glc-slide {
+          from { opacity: 0; transform: translateX(-12px); }
+          to   { opacity: 1; transform: translateX(0);      }
+        }
+        @keyframes glc-ping {
+          0%, 100% { transform: scale(1);   opacity: 1;   }
+          50%      { transform: scale(1.6); opacity: 0.35; }
+        }
+        @keyframes glc-glow-gold {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(201,168,76,0); }
+          50%      { box-shadow: 0 0 28px 6px rgba(201,168,76,0.22); }
+        }
+        .glc-fade      { animation: glc-fade      0.45s cubic-bezier(0.2,0,0.1,1) both; }
+        .glc-slide     { animation: glc-slide     0.4s  cubic-bezier(0.2,0,0.1,1) both; }
+        .glc-ping      { animation: glc-ping      1.8s  ease-in-out infinite; }
+        .glc-glow-gold { animation: glc-glow-gold 2.4s  ease-in-out infinite; }
+        @keyframes glc-xp-rise {
+          0%   { opacity: 0; transform: translateY(0) scale(0.8); }
+          15%  { opacity: 1; transform: translateY(-4px) scale(1.15); }
+          70%  { opacity: 1; transform: translateY(-36px) scale(1); }
+          100% { opacity: 0; transform: translateY(-60px) scale(0.9); }
+        }
+        @keyframes glc-ring-done {
+          0%   { transform: scale(1); }
+          30%  { transform: scale(1.18); }
+          60%  { transform: scale(0.94); }
+          100% { transform: scale(1); }
+        }
+        .glc-xp-rise   { animation: glc-xp-rise   1.3s cubic-bezier(0.25,0.46,0.45,0.94) forwards; }
+        .glc-ring-done { animation: glc-ring-done  0.5s cubic-bezier(0.34,1.56,0.64,1) both; }
+      `}</style>
+
+      {/* ── XP Particles overlay ─────────────────────────────────────────────── */}
+      <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 999 }}>
+        {particles.map(p => (
+          <div key={p.id} className="glc-xp-rise" style={{
+            position: 'absolute',
+            right: isMobile ? '24px' : '48px',
+            top:   isMobile ? '80px' : '160px',
+            ...M, fontWeight: 700, fontSize: '16px',
+            color: p.delta > 0 ? C.greenL : '#f97373',
+            letterSpacing: '0.05em',
+            textShadow: p.delta > 0 ? `0 0 12px ${C.greenL}60` : '0 0 12px #f9737360',
+          }}>
+            {p.delta > 0 ? `+${p.delta}` : p.delta} XP
+          </div>
+        ))}
+      </div>
+
+      {/* ── Sidebar ─────────────────────────────────────────────────────────── */}
+      {!isMobile && <aside style={{
+        width: 220, flexShrink: 0,
+        background: C.sidebar,
+        borderRight: `1px solid ${C.border}`,
+        display: 'flex', flexDirection: 'column',
+        position: 'fixed', top: 0, left: 0, bottom: 0,
+        zIndex: 50,
+      }}>
+        {/* Logo */}
+        <div style={{ padding: '32px 24px 28px', borderBottom: `1px solid ${C.border}` }}>
+          <div style={{
+            width: 44, height: 44,
+            background: C.accent,
+            clipPath: 'polygon(12% 0%, 88% 0%, 100% 12%, 100% 88%, 88% 100%, 12% 100%, 0% 88%, 0% 12%)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            marginBottom: 14,
+          }}>
+            <span style={{ ...D, fontWeight: 900, fontSize: '18px', color: 'white', letterSpacing: '0.05em' }}>
+              GLC
+            </span>
+          </div>
+          <div style={{ ...D, fontWeight: 700, fontSize: '10px', letterSpacing: '0.25em', color: C.muted, textTransform: 'uppercase' as const }}>
+            Gentleman Létal Club
+          </div>
+        </div>
+
+        {/* Nav */}
+        <nav style={{ padding: '20px 16px', flex: 1 }}>
+          {navItems.map(item => (
+            <a key={item.href} href={item.href} style={{
+              display: 'block',
+              padding: '9px 12px',
+              marginBottom: 2,
+              ...D,
+              fontWeight: 700,
+              fontSize: '13px',
+              letterSpacing: '0.15em',
+              textTransform: 'uppercase' as const,
+              textDecoration: 'none',
+              color:      item.active ? C.text : C.muted,
+              background: item.active ? C.dimmed : 'transparent',
+              borderLeft: item.active ? `2px solid ${C.accent}` : '2px solid transparent',
+            }}>
+              {item.label}
+            </a>
+          ))}
+
+          {/* WhatsApp nav item */}
+          {whatsappLink && (
+            <a href={whatsappLink} target="_blank" rel="noopener noreferrer" style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              padding: '9px 12px',
+              marginTop: 8,
+              ...D,
+              fontWeight: 700,
+              fontSize: '13px',
+              letterSpacing: '0.15em',
+              textTransform: 'uppercase' as const,
+              textDecoration: 'none',
+              color: C.greenL,
+              borderLeft: `2px solid ${C.green}`,
+            }}>
+              <span>WhatsApp</span>
+              <span className="glc-ping" style={{
+                width: 7, height: 7, flexShrink: 0,
+                borderRadius: '50%',
+                background: C.greenL,
+                display: 'inline-block',
+              }} />
+            </a>
+          )}
+        </nav>
+
+        {/* Programme bar */}
+        <div style={{ padding: '0 20px 20px' }}>
+          <div style={{ ...D, fontWeight: 700, fontSize: '9px', letterSpacing: '0.2em', color: C.muted, textTransform: 'uppercase' as const, marginBottom: 8 }}>
+            Jour {jourX} / 180
+          </div>
+          <div style={{ height: 2, background: C.border }}>
+            <div style={{ height: '100%', width: `${daysPct}%`, background: C.accent }} />
+          </div>
+        </div>
+
+        {/* User footer */}
+        <div style={{
+          borderTop: `1px solid ${C.border}`,
+          padding: '16px 20px',
+          display: 'flex', alignItems: 'center', gap: 10,
+        }}>
+          <div style={{
+            width: 32, height: 32, flexShrink: 0,
+            background: C.accent,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <span style={{ ...D, fontWeight: 900, fontSize: '13px', color: 'white' }}>
+              {firstName.charAt(0).toUpperCase()}
+            </span>
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ ...D, fontWeight: 700, fontSize: '12px', letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {firstName}
+            </div>
+            <div style={{ ...D, fontWeight: 700, fontSize: '9px', letterSpacing: '0.15em', color: C.accent, textTransform: 'uppercase' as const }}>
+              {level.name}
+            </div>
+          </div>
+          <button onClick={handleSignOut} title="Déconnexion" style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: C.muted, fontSize: '18px', lineHeight: 1, padding: 4,
+          }}>
+            ⏻
+          </button>
+        </div>
+      </aside>}
+
+      {/* ── Main ────────────────────────────────────────────────────────────── */}
+      <main style={{ flex: 1, marginLeft: isMobile ? 0 : 220, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+
+        {/* ── Sticky header ───────────────────────────────────────────────── */}
+        <header style={{
+          position: 'sticky', top: 0, zIndex: 40,
+          background: 'rgba(8,8,8,0.92)',
+          backdropFilter: 'blur(14px)',
+          borderBottom: `1px solid ${C.border}`,
+        }}>
+          <div style={{ height: 2, background: C.dimmed }}>
+            <div style={{ height: '100%', width: `${daysPct}%`, background: `linear-gradient(90deg, ${C.accent}, ${C.accentL})`, transition: 'width 1.2s ease' }} />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: isMobile ? '12px 16px' : '12px 40px' }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+              <span style={{ ...D, fontWeight: 900, fontSize: '26px', letterSpacing: '0.06em', color: C.text, lineHeight: 1 }}>
+                JOUR {jourX}
+              </span>
+              <span style={{ ...M, fontSize: '11px', color: C.muted }}>/ 180 — {daysLeft}j restants</span>
+            </div>
+            {!isMobile && onboardingDate && (
+              <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
+                {[
+                  { v: countdown.d, u: 'j' },
+                  { v: countdown.h, u: 'h' },
+                  { v: countdown.m, u: 'm' },
+                  { v: countdown.s, u: 's' },
+                ].map(({ v, u }, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'baseline', gap: 2 }}>
+                    <span style={{ ...M, fontSize: '15px', fontWeight: 700, color: i === 3 ? C.accent : C.text }}>{p2(v)}</span>
+                    <span style={{ ...D, fontWeight: 700, fontSize: '9px', color: C.muted, letterSpacing: '0.1em' }}>{u}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </header>
+
+        {/* ── Hero ────────────────────────────────────────────────────────────*/}
+        <div style={{
+          background: `linear-gradient(160deg, #100808 0%, ${C.bg} 100%)`,
+          borderBottom: `1px solid ${C.border}`,
+          padding: isMobile ? '32px 16px 28px' : '52px 40px 44px',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 32, flexWrap: 'wrap' }}>
+
+            {/* Left */}
+            <div>
+              <div style={{ ...D, fontWeight: 700, fontSize: '10px', letterSpacing: '0.4em', color: C.muted, textTransform: 'uppercase' as const, marginBottom: 12 }}>
+                Programme 180 Jours · Gentleman Létal Club
+              </div>
+              <h1 style={{
+                ...D, fontWeight: 900,
+                fontSize: 'clamp(56px, 7.5vw, 104px)',
+                lineHeight: 0.88, letterSpacing: '0.02em',
+                textTransform: 'uppercase' as const,
+                color: C.text, margin: '0 0 20px',
+              }}>
+                {firstName}
+              </h1>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' as const }}>
+                <span style={{
+                  ...D, fontWeight: 700, fontSize: '14px', letterSpacing: '0.2em',
+                  textTransform: 'uppercase' as const,
+                  color: C.accent,
+                  borderLeft: `3px solid ${C.accent}`,
+                  paddingLeft: 10,
+                }}>
+                  {level.name}
+                </span>
+                {myRank && (
+                  <span style={{
+                    ...M, fontSize: '11px', color: myRank <= 3 ? C.gold : C.muted,
+                    border: `1px solid ${myRank <= 3 ? C.gold : C.border}`,
+                    padding: '2px 10px',
+                  }}>
+                    #{myRank} sur {leaderboard.length}
+                  </span>
+                )}
+                {allDone && (
+                  <span style={{
+                    ...D, fontWeight: 900, fontSize: '11px', letterSpacing: '0.2em',
+                    textTransform: 'uppercase' as const,
+                    color: C.gold,
+                    border: `1px solid ${C.gold}`,
+                    padding: '3px 10px',
+                  }}>
+                    Mission accomplie
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Right: day counter + countdown */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 16, flexShrink: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+                <span style={{ ...M, fontWeight: 700, fontSize: '88px', lineHeight: 1, color: C.text, letterSpacing: '-0.04em' }}>
+                  {String(jourX).padStart(3, '0')}
+                </span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <span style={{ ...D, fontWeight: 700, fontSize: '12px', letterSpacing: '0.2em', color: C.muted, textTransform: 'uppercase' as const }}>/180</span>
+                  <span style={{ ...D, fontWeight: 700, fontSize: '9px', letterSpacing: '0.15em', color: C.muted, textTransform: 'uppercase' as const }}>JOURS</span>
+                </div>
+              </div>
+              {onboardingDate && (
+                <div style={{ display: 'flex', gap: 6 }}>
+                  {[
+                    { v: countdown.d, label: 'JOURS' },
+                    { v: countdown.h, label: 'H' },
+                    { v: countdown.m, label: 'MIN' },
+                    { v: countdown.s, label: 'SEC' },
+                  ].map(({ v, label }, i) => (
+                    <div key={i} style={{
+                      background: C.surface,
+                      border: `1px solid ${i === 3 ? C.accent + '40' : C.border}`,
+                      padding: '10px 14px',
+                      textAlign: 'center' as const,
+                      minWidth: 54,
+                    }}>
+                      <div style={{ ...M, fontSize: '22px', fontWeight: 700, color: i === 3 ? C.accent : C.text, lineHeight: 1 }}>{p2(v)}</div>
+                      <div style={{ ...D, fontWeight: 700, fontSize: '8px', letterSpacing: '0.2em', color: C.muted, marginTop: 5 }}>{label}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Quote strip / Journée parfaite banner ───────────────────────────*/}
+        {allDone ? (
+          <div className="glc-glow-gold" style={{
+            background: 'linear-gradient(90deg, #1A1400, #0A0800, #1A1400)',
+            border: `1px solid ${C.gold}40`,
+            borderLeft: `4px solid ${C.gold}`,
+            borderRight: 'none',
+            padding: '14px 40px',
+          }}>
+            <span style={{
+              ...D, fontWeight: 900, fontSize: '12px',
+              letterSpacing: '0.32em', textTransform: 'uppercase' as const,
+              color: C.gold,
+              whiteSpace: 'nowrap',
+            }}>
+              Journée parfaite — toutes les missions accomplies
+            </span>
+          </div>
+        ) : (
+          <div style={{ background: C.accent, padding: '13px 40px', overflow: 'hidden' }}>
+            <span style={{
+              ...D, fontWeight: 900, fontSize: '12px',
+              letterSpacing: '0.32em', textTransform: 'uppercase' as const,
+              color: 'rgba(255,255,255,0.88)',
+              whiteSpace: 'nowrap',
+            }}>
+              LE CONFORT EST L&apos;ENNEMI DU PROGRÈS &nbsp;·&nbsp; DISCIPLINE &nbsp;·&nbsp; EXCELLENCE &nbsp;·&nbsp; IDENTITÉ
+            </span>
+          </div>
+        )}
+
+        {/* ── Content ─────────────────────────────────────────────────────── */}
+        <div style={{ padding: isMobile ? '24px 16px 64px' : '36px 40px 80px' }}>
+
+          {/* Stats strip */}
+          <div className="glc-fade" style={{
+            display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
+            background: C.surface,
+            border: `1px solid ${C.border}`,
+            marginBottom: 36,
+          }}>
+            {[
+              { label: 'XP Total',   val: <AnimatedCounter to={localXP} />,               unit: 'pts',                            color: C.accent },
+              { label: 'Série',      val: hotStreak ? `🔥 ${streak}` : streak,             unit: streak !== 1 ? 'jours' : 'jour',  color: hotStreak ? C.gold : C.text },
+              { label: 'Record',     val: record,                                           unit: record !== 1 ? 'jours' : 'jour',  color: C.text   },
+              { label: 'Classement', val: myRank ? `#${myRank}` : '—',                     unit: `/ ${leaderboard.length || '—'}`, color: myRank && myRank <= 3 ? C.gold : C.text },
+            ].map((stat, i) => (
+              <div key={i} style={{ padding: '20px 24px', borderRight: i < 3 ? `1px solid ${C.border}` : 'none' }}>
+                <div style={{ ...D, fontWeight: 700, fontSize: '9px', letterSpacing: '0.25em', color: C.muted, textTransform: 'uppercase' as const, marginBottom: 8 }}>
+                  {stat.label}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 5 }}>
+                  <span style={{ ...M, fontSize: '26px', fontWeight: 700, color: stat.color, lineHeight: 1 }}>
+                    {stat.val}
+                  </span>
+                  <span style={{ ...M, fontSize: '11px', color: C.muted }}>{stat.unit}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Two-column grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 320px', gap: 24, alignItems: 'start', marginBottom: 48 }}>
+
+            {/* ── Missions ──────────────────────────────────────────────── */}
+            <div style={{ minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
+                <h2 style={{ ...D, fontWeight: 900, fontSize: '20px', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: C.text, margin: 0, flex: 1 }}>
+                  Missions du jour
+                </h2>
+                {/* Mini ring */}
+                <div className={celebrateRing ? 'glc-ring-done' : undefined} style={{ position: 'relative', width: 44, height: 44, flexShrink: 0 }}>
+                  <svg width={44} height={44} style={{ transform: 'rotate(-90deg)', display: 'block' }}>
+                    <circle cx={22} cy={22} r={17} fill="none" stroke={C.border} strokeWidth={4} />
+                    <circle cx={22} cy={22} r={17} fill="none"
+                      stroke={allDone ? C.gold : C.accent}
+                      strokeWidth={4}
+                      strokeDasharray={2 * Math.PI * 17}
+                      strokeDashoffset={2 * Math.PI * 17 * (1 - completedPct / 100)}
+                      strokeLinecap="butt"
+                      style={{ transition: 'stroke-dashoffset 0.4s ease, stroke 0.3s ease' }}
+                    />
+                  </svg>
+                  <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ ...M, fontSize: '10px', fontWeight: 700, color: C.text }}>{completedCount}/{totalHabits}</span>
+                  </div>
+                </div>
+              </div>
+
+              {habits.length === 0 ? (
+                <div style={{
+                  background: C.surface, border: `1px solid ${C.border}`,
+                  padding: '28px 24px',
+                  ...D, fontWeight: 700, fontSize: '13px', letterSpacing: '0.1em',
+                  color: C.muted, textTransform: 'uppercase' as const,
+                }}>
+                  Aucune mission assignée
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {habits.map((habit, i) => {
+                    const done    = completed.has(habit.id)
+                    const loading = loadingId === habit.id
+                    return (
+                      <button
+                        key={habit.id}
+                        onClick={() => handleToggle(habit.id)}
+                        disabled={!!loadingId}
+                        className="glc-slide"
+                        style={{
+                          animationDelay: `${i * 55}ms`,
+                          display: 'flex', alignItems: 'center', gap: 20,
+                          background:  done ? C.surface : C.bg,
+                          border:      `1px solid ${done ? C.border : C.dimmed}`,
+                          borderLeft:  done ? `3px solid ${C.accent}` : '3px solid transparent',
+                          padding:     '14px 20px',
+                          cursor:      loadingId ? 'wait' : 'pointer',
+                          textAlign:   'left' as const,
+                          opacity:     loading ? 0.6 : 1,
+                          transition:  'background 0.15s, opacity 0.15s',
+                          width:       '100%',
+                        }}
+                      >
+                        <span style={{ ...M, fontSize: '10px', color: C.muted, minWidth: 20 }}>
+                          {String(i + 1).padStart(2, '0')}
+                        </span>
+                        <span style={{
+                          flex: 1,
+                          ...D, fontWeight: 700, fontSize: '14px', letterSpacing: '0.06em',
+                          textTransform: 'uppercase' as const,
+                          color:          done ? C.muted : C.text,
+                          textDecoration: done ? 'line-through' : 'none',
+                        }}>
+                          {habit.name}
+                        </span>
+                        <div style={{
+                          width: 20, height: 20, flexShrink: 0,
+                          border:     `1.5px solid ${done ? C.accent : C.muted}`,
+                          background: done ? C.accent : 'transparent',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          transition: 'all 0.15s ease',
+                        }}>
+                          {done && (
+                            <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+                              <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="square" />
+                            </svg>
+                          )}
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* ── Right sidebar ─────────────────────────────────────────── */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+              {/* XP card */}
+              <div className="glc-fade" style={{
+                background: C.surface, border: `1px solid ${C.border}`,
+                padding: '24px',
+                animationDelay: '0.15s',
+              }}>
+                <div style={{ ...D, fontWeight: 700, fontSize: '9px', letterSpacing: '0.25em', color: C.muted, textTransform: 'uppercase' as const, marginBottom: 16 }}>
+                  Progression XP
+                </div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
+                  <span style={{ ...M, fontSize: '36px', fontWeight: 700, color: C.accent, lineHeight: 1 }}>
+                    <AnimatedCounter to={localXP} />
+                  </span>
+                  <span style={{ ...M, fontSize: '12px', color: C.muted }}>XP</span>
+                </div>
+                <div style={{ ...D, fontWeight: 700, fontSize: '11px', letterSpacing: '0.12em', color: C.muted, textTransform: 'uppercase' as const, marginBottom: 16 }}>
+                  {level.name}
+                </div>
+                <div style={{ height: 3, background: C.dimmed, marginBottom: nextLevel ? 8 : 16 }}>
+                  <div style={{ height: '100%', width: `${displayedLevelPct}%`, background: `linear-gradient(90deg, ${C.accent}, ${C.accentL})`, transition: 'width 1.4s cubic-bezier(0.4,0,0.2,1)' }} />
+                </div>
+                {nextLevel && (
+                  <div style={{ ...M, fontSize: '9px', color: C.muted, marginBottom: 16 }}>
+                    {nextLevel.xpNeeded.toLocaleString('fr-FR')} XP pour {nextLevel.name}
+                  </div>
+                )}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                  {LEVELS.map((lvl, i) => {
+                    const isActive = lvl.name === level.name
+                    const isPast   = xp >= lvl.max
+                    return (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, opacity: isPast ? 0.3 : 1 }}>
+                        <div style={{ width: 6, height: 6, flexShrink: 0, background: isActive ? C.accent : isPast ? C.muted : C.dimmed }} />
+                        <span style={{ ...D, fontWeight: 700, fontSize: '10px', letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: isActive ? C.text : C.muted }}>
+                          {lvl.name}
+                        </span>
+                        {lvl.max !== Infinity && (
+                          <span style={{ ...M, fontSize: '9px', color: C.muted, marginLeft: 'auto' }}>
+                            {lvl.max.toLocaleString('fr-FR')}
+                          </span>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Streak card */}
+              <div className="glc-fade" style={{
+                background: C.surface,
+                border: legendStreak ? `1px solid ${C.gold}50` : `1px solid ${C.border}`,
+                borderTop: legendStreak ? `2px solid ${C.gold}` : hotStreak ? `2px solid ${C.accentL}` : `1px solid ${C.border}`,
+                padding: '20px 24px',
+                animationDelay: '0.2s',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                  <div style={{ ...D, fontWeight: 700, fontSize: '9px', letterSpacing: '0.25em', color: C.muted, textTransform: 'uppercase' as const }}>
+                    Série actuelle
+                  </div>
+                  {hotStreak && <span style={{ fontSize: '14px', lineHeight: 1 }}>🔥</span>}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 16 }}>
+                  <span style={{ ...M, fontSize: '32px', fontWeight: 700, color: legendStreak ? C.gold : hotStreak ? C.accentL : C.text, lineHeight: 1 }}>
+                    {streak}
+                  </span>
+                  <span style={{ ...M, fontSize: '11px', color: C.muted }}>jours</span>
+                  {record > 0 && (
+                    <span style={{ ...M, fontSize: '10px', color: C.muted, marginLeft: 4 }}>
+                      · record {record}j
+                    </span>
+                  )}
+                </div>
+                {/* Milestone bars */}
+                <div style={{ display: 'flex', gap: 4, alignItems: 'flex-end' }}>
+                  {STREAK_MILESTONES.map((ms, i) => {
+                    const reached = streak >= ms
+                    return (
+                      <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                        <div style={{ height: 3, width: '100%', background: reached ? (ms >= 30 ? C.gold : C.accentL) : C.border }} />
+                        <span style={{ ...M, fontSize: '8px', color: reached ? (ms >= 30 ? C.gold : C.text) : C.muted }}>
+                          {ms}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* WhatsApp CTA card */}
+              {whatsappLink && (
+                <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="glc-fade" style={{
+                  display: 'block',
+                  background: '#010F06',
+                  border: `1px solid ${C.green}30`,
+                  borderLeft: `3px solid ${C.green}`,
+                  padding: '18px 20px',
+                  textDecoration: 'none',
+                  animationDelay: '0.25s',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill={C.greenL}>
+                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                    </svg>
+                    <span style={{ ...D, fontWeight: 900, fontSize: '12px', letterSpacing: '0.2em', textTransform: 'uppercase' as const, color: C.greenL }}>
+                      Groupe WhatsApp
+                    </span>
+                  </div>
+                  <div style={{ ...D, fontWeight: 500, fontSize: '12px', color: '#4A7A5A', letterSpacing: '0.04em' }}>
+                    Rejoindre la communauté GLC
+                  </div>
+                </a>
+              )}
+
+              {/* Objectif */}
+              {objectifText && (
+                <div className="glc-fade" style={{
+                  background: C.surface, border: `1px solid ${C.border}`,
+                  padding: '20px 24px',
+                  animationDelay: '0.3s',
+                }}>
+                  <div style={{ ...D, fontWeight: 700, fontSize: '9px', letterSpacing: '0.25em', color: C.muted, textTransform: 'uppercase' as const, marginBottom: 10 }}>
+                    Objectif
+                  </div>
+                  <p style={{ ...D, fontWeight: 500, fontSize: '13px', lineHeight: 1.6, color: C.text, margin: 0 }}>
+                    {objectifText}
+                  </p>
+                </div>
+              )}
+
+              {/* Vision */}
+              {visionText && (
+                <div className="glc-fade" style={{
+                  background: C.surface,
+                  border: `1px solid ${C.border}`,
+                  borderTop: `2px solid ${C.accent}`,
+                  padding: '20px 24px',
+                  animationDelay: '0.35s',
+                }}>
+                  <div style={{ ...D, fontWeight: 700, fontSize: '9px', letterSpacing: '0.25em', color: C.accent, textTransform: 'uppercase' as const, marginBottom: 10 }}>
+                    Vision 180j
+                  </div>
+                  <p style={{ ...D, fontWeight: 500, fontSize: '13px', lineHeight: 1.6, color: C.text, margin: 0, fontStyle: 'italic' }}>
+                    &ldquo;{visionText}&rdquo;
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ── Leaderboard ─────────────────────────────────────────────────── */}
+          {leaderboard.length > 0 && (
+            <div className="glc-fade" style={{ animationDelay: '0.4s' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 16 }}>
+                <h2 style={{ ...D, fontWeight: 900, fontSize: '20px', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: C.text, margin: 0 }}>
+                  Classement
+                </h2>
+                <span style={{ ...M, fontSize: '11px', color: C.muted }}>{leaderboard.length} membres</span>
+              </div>
+
+              <div style={{ border: `1px solid ${C.border}`, overflow: 'hidden' }}>
+                {/* Table header */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '52px 38px 1fr 80px 88px',
+                  padding: '8px 20px',
+                  background: C.surface,
+                  borderBottom: `1px solid ${C.border}`,
+                }}>
+                  {[
+                    { label: '#',      align: 'left'  },
+                    { label: '',       align: 'left'  },
+                    { label: 'Membre', align: 'left'  },
+                    { label: 'Série',  align: 'right' },
+                    { label: 'XP',     align: 'right' },
+                  ].map((h, i) => (
+                    <div key={i} style={{
+                      ...D, fontWeight: 700, fontSize: '9px', letterSpacing: '0.2em',
+                      color: C.muted, textTransform: 'uppercase' as const,
+                      textAlign: h.align as 'left' | 'right',
+                    }}>
+                      {h.label}
+                    </div>
+                  ))}
+                </div>
+
+                {leaderboard.slice(0, 20).map((entry, i) => {
+                  const isTop3    = entry.rank <= 3
+                  const rankColor = entry.rank === 1 ? C.gold : entry.rank === 2 ? '#A0AABA' : entry.rank === 3 ? '#B07840' : C.muted
+                  const rankLabel = entry.rank === 1 ? '①' : entry.rank === 2 ? '②' : entry.rank === 3 ? '③' : String(entry.rank)
+                  const xpPct     = Math.round((entry.xp / maxXP) * 100)
+
+                  return (
+                    <div
+                      key={entry.clientId}
+                      style={{
+                        position: 'relative',
+                        display: 'grid',
+                        gridTemplateColumns: '52px 38px 1fr 80px 88px',
+                        padding: '12px 20px',
+                        borderBottom: i < Math.min(leaderboard.length, 20) - 1 ? `1px solid ${C.border}` : 'none',
+                        background: entry.isMe
+                          ? `${C.accent}10`
+                          : i % 2 === 0 ? C.bg : C.surface,
+                        outline: entry.isMe ? `1px solid ${C.accent}28` : 'none',
+                        outlineOffset: '-1px',
+                      }}
+                    >
+                      {/* XP background bar */}
+                      <div style={{
+                        position: 'absolute', left: 0, top: 0, bottom: 0,
+                        width: `${xpPct}%`, pointerEvents: 'none',
+                        background: isTop3 ? `${C.gold}06` : `${C.muted}04`,
+                      }} />
+
+                      <div style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
+                        <span style={{ ...M, fontSize: isTop3 ? '17px' : '12px', fontWeight: 700, color: rankColor, lineHeight: 1 }}>
+                          {rankLabel}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
+                        <div style={{
+                          width: 26, height: 26,
+                          background: entry.isMe ? C.accent : C.dimmed,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                          <span style={{ ...D, fontWeight: 900, fontSize: '11px', color: entry.isMe ? 'white' : C.muted }}>
+                            {entry.firstName.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0, position: 'relative' }}>
+                        <span style={{
+                          ...D, fontWeight: entry.isMe ? 900 : 700,
+                          fontSize: '13px', letterSpacing: '0.08em',
+                          textTransform: 'uppercase' as const,
+                          color: entry.isMe ? C.text : isTop3 ? C.text : C.muted,
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        }}>
+                          {entry.firstName}
+                        </span>
+                        {entry.isMe && (
+                          <span style={{ ...D, fontWeight: 700, fontSize: '9px', letterSpacing: '0.15em', color: C.accent, flexShrink: 0 }}>
+                            toi
+                          </span>
+                        )}
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', position: 'relative' }}>
+                        <span style={{ ...M, fontSize: '12px', fontWeight: 700, color: entry.streak > 0 ? C.gold : C.dimmed }}>
+                          {entry.streak > 0 ? `${entry.streak}d` : '—'}
+                        </span>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', position: 'relative' }}>
+                        <span style={{
+                          ...M, fontSize: '13px', fontWeight: 700,
+                          color: isTop3 ? C.gold : entry.isMe ? C.accent : C.text,
+                        }}>
+                          {entry.xp.toLocaleString('fr-FR')}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {leaderboard.length > 20 && (
+                <div style={{
+                  ...D, fontWeight: 700, fontSize: '10px', letterSpacing: '0.2em',
+                  color: C.muted, textTransform: 'uppercase' as const,
+                  textAlign: 'center' as const, marginTop: 12,
+                }}>
+                  + {leaderboard.length - 20} autres membres
+                </div>
+              )}
+            </div>
+          )}
+
+        </div>
+
+        {/* ── Mobile bottom nav ────────────────────────────────────────── */}
+        {isMobile && (
+          <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: 64, zIndex: 50,
+            display: 'flex', background: C.surface, borderTop: `1px solid ${C.border}` }}>
+            {navItems.map(item => (
+              <a key={item.href} href={item.href} style={{ flex: 1, display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', gap: 4,
+                color: item.active ? C.accent : C.muted, textDecoration: 'none' }}>
+                {item.href === '/dashboard'  && <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>}
+                {item.href === '/programme'  && <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>}
+                {item.href === '/messagerie' && <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>}
+                {item.href === '/profil'     && <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>}
+                <span style={{ ...D, fontWeight: 700, fontSize: '9px', letterSpacing: '0.15em', textTransform: 'uppercase' as const }}>{item.label}</span>
+              </a>
+            ))}
+          </div>
+        )}
+      </main>
+    </div>
+  )
+}

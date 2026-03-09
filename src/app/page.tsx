@@ -69,7 +69,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden">
       {/* Background effects */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(196,30,42,0.08)_0%,_transparent_60%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(139,26,26,0.08)_0%,_transparent_60%)]" />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-glc-accent/5 rounded-full blur-[120px]" />
       
       <div className="w-full max-w-sm relative z-10 animate-fade-in">

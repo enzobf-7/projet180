@@ -164,10 +164,10 @@ export default function OnboardingPage() {
   // ── Step 3/4 — Links ──
   async function handleLinkClick(step: 'step3_whatsapp' | 'step4_skool', url: string, next: Step) {
     const safeUrl = url?.trim()
-    if (!safeUrl || safeUrl === '#') {
-      return
+    // Open link only if configured — step is marked done either way
+    if (safeUrl && safeUrl !== '#') {
+      window.open(safeUrl, '_blank')
     }
-    window.open(safeUrl, '_blank')
     await markStep(step)
     setProgress(prev => ({ ...prev, [step]: true }))
     setTimeout(() => setCurrentStep(next), 600)
@@ -175,8 +175,18 @@ export default function OnboardingPage() {
 
   // ── Step 5 — Call ──
   async function handleBookCall() {
-    window.open(settings.iclosed_link, '_blank')
+    const safeUrl = settings.iclosed_link?.trim()
+    if (safeUrl && safeUrl !== '#') {
+      window.open(safeUrl, '_blank')
+    }
     await markStep('step5_call')
+    // Set completed_at so middleware redirects to dashboard on next login
+    if (userId) {
+      await supabase
+        .from('onboarding_progress')
+        .update({ completed_at: new Date().toISOString() })
+        .eq('user_id', userId)
+    }
     setTimeout(() => router.push('/dashboard'), 800)
   }
 
@@ -187,21 +197,21 @@ export default function OnboardingPage() {
   if (pageLoading) return <LoadingScreen />
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] text-[#F5F5F5]" style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div className="min-h-screen bg-[#060606] text-[#F5F5F5]" style={{ fontFamily: "'Inter', sans-serif" }}>
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-[#0A0A0A]/95 backdrop-blur-sm border-b border-[#2A2A2A]">
+      <header className="sticky top-0 z-50 bg-[#060606]/95 backdrop-blur-sm border-b border-[#1E1E1E]">
         <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-[#C41E2A] font-black tracking-widest text-sm uppercase">GLC</span>
-            <span className="text-[#2A2A2A]">|</span>
-            <span className="text-[#888888] text-xs uppercase tracking-widest">Onboarding</span>
+            <span className="text-[#8B1A1A] font-black tracking-widest text-sm uppercase">GLC</span>
+            <span className="text-[#1E1E1E]">|</span>
+            <span className="text-[#484848] text-xs uppercase tracking-widest">Onboarding</span>
           </div>
-          <span className="text-[#888888] text-xs">{currentStep}/5</span>
+          <span className="text-[#484848] text-xs">{currentStep}/5</span>
         </div>
       </header>
 
       {/* Progress Bar */}
-      <div className="bg-[#141414] border-b border-[#2A2A2A]">
+      <div className="bg-[#0F0F0F] border-b border-[#1E1E1E]">
         <div className="max-w-lg mx-auto px-4 py-3">
           <div className="flex gap-1.5">
             {([1,2,3,4,5] as Step[]).map(s => (
@@ -215,10 +225,10 @@ export default function OnboardingPage() {
                     (s === 3 && progress.step3_whatsapp) ||
                     (s === 4 && progress.step4_skool) ||
                     (s === 5 && progress.step5_call)
-                      ? '#C41E2A'
+                      ? '#8B1A1A'
                       : s === currentStep
-                      ? '#E63946'
-                      : '#2A2A2A'
+                      ? '#A32020'
+                      : '#1E1E1E'
                 }}
               />
             ))}
@@ -334,12 +344,12 @@ function StepNav({
             className={`
               flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium whitespace-nowrap transition-all
               ${isActive 
-                ? 'border-[#C41E2A] bg-[#C41E2A]/10 text-[#F5F5F5]' 
+                ? 'border-[#8B1A1A] bg-[#8B1A1A]/10 text-[#F5F5F5]' 
                 : s.done 
                 ? 'border-[#22C55E]/30 bg-[#22C55E]/5 text-[#22C55E] cursor-pointer'
                 : isLocked
-                ? 'border-[#2A2A2A] bg-[#141414] text-[#444444] cursor-not-allowed'
-                : 'border-[#2A2A2A] bg-[#141414] text-[#888888]'
+                ? 'border-[#1E1E1E] bg-[#0F0F0F] text-[#444444] cursor-not-allowed'
+                : 'border-[#1E1E1E] bg-[#0F0F0F] text-[#484848]'
               }
             `}
           >
@@ -348,7 +358,7 @@ function StepNav({
             ) : s.done ? (
               <span className="text-[#22C55E]">✓</span>
             ) : (
-              <span className={isActive ? 'text-[#C41E2A]' : 'text-[#555555]'}>{s.n}</span>
+              <span className={isActive ? 'text-[#8B1A1A]' : 'text-[#484848]'}>{s.n}</span>
             )}
             <span>{s.label}</span>
           </button>
@@ -381,7 +391,7 @@ function Step1Contract({
       />
 
       {/* PDF Viewer */}
-      <div className="rounded-xl border border-[#2A2A2A] overflow-hidden bg-[#141414]">
+      <div className="rounded-xl border border-[#1E1E1E] overflow-hidden bg-[#0F0F0F]">
         {pdfUrl ? (
           <iframe
             src={pdfUrl}
@@ -392,8 +402,8 @@ function Step1Contract({
         ) : (
           <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
             <span className="text-4xl mb-4">📄</span>
-            <p className="text-[#888888] text-sm">Le contrat n'a pas encore été uploadé par Robin.</p>
-            <p className="text-[#555555] text-xs mt-2">Il sera disponible très prochainement.</p>
+            <p className="text-[#484848] text-sm">Le contrat n'a pas encore été uploadé par Robin.</p>
+            <p className="text-[#484848] text-xs mt-2">Il sera disponible très prochainement.</p>
           </div>
         )}
       </div>
@@ -408,12 +418,12 @@ function Step1Contract({
             className="sr-only"
           />
           <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
-            accepted ? 'bg-[#C41E2A] border-[#C41E2A]' : 'bg-transparent border-[#2A2A2A] group-hover:border-[#555555]'
+            accepted ? 'bg-[#8B1A1A] border-[#8B1A1A]' : 'bg-transparent border-[#1E1E1E] group-hover:border-[#484848]'
           }`}>
             {accepted && <span className="text-white text-xs">✓</span>}
           </div>
         </div>
-        <span className="text-sm text-[#888888] leading-relaxed">
+        <span className="text-sm text-[#484848] leading-relaxed">
           J'ai lu et j'accepte les conditions générales du programme Gentleman Létal Club.
         </span>
       </label>
@@ -425,15 +435,15 @@ function Step1Contract({
         className={`
           w-full py-4 rounded-xl font-bold text-sm uppercase tracking-widest transition-all
           ${accepted && !loading
-            ? 'bg-[#C41E2A] hover:bg-[#E63946] text-white active:scale-[0.98]'
-            : 'bg-[#2A2A2A] text-[#555555] cursor-not-allowed'
+            ? 'bg-[#8B1A1A] hover:bg-[#A32020] text-white active:scale-[0.98]'
+            : 'bg-[#1E1E1E] text-[#484848] cursor-not-allowed'
           }
         `}
       >
         {loading ? 'Signature en cours…' : 'Signer le contrat'}
       </button>
 
-      <p className="text-center text-xs text-[#555555]">
+      <p className="text-center text-xs text-[#484848]">
         Ta signature électronique — avec la date, l'heure et ton IP — est enregistrée et juridiquement valide.
       </p>
     </div>
@@ -471,11 +481,11 @@ function Step2Questionnaire({
           <div
             key={i}
             className="h-0.5 flex-1 rounded-full transition-all"
-            style={{ backgroundColor: i < section ? '#C41E2A' : i === section - 1 ? '#E63946' : '#2A2A2A' }}
+            style={{ backgroundColor: i < section ? '#8B1A1A' : i === section - 1 ? '#A32020' : '#1E1E1E' }}
           />
         ))}
       </div>
-      <p className="text-xs text-[#888888]">Section {section}/{totalSections}</p>
+      <p className="text-xs text-[#484848]">Section {section}/{totalSections}</p>
 
       {/* Section content */}
       {section === 1 && <QSection1 q={questionnaire} setQ={setQ} />}
@@ -491,7 +501,7 @@ function Step2Questionnaire({
         {section > 1 && (
           <button
             onClick={() => setSection(section - 1)}
-            className="flex-1 py-3.5 rounded-xl border border-[#2A2A2A] text-[#888888] text-sm font-medium hover:border-[#555555] transition-all"
+            className="flex-1 py-3.5 rounded-xl border border-[#1E1E1E] text-[#484848] text-sm font-medium hover:border-[#484848] transition-all"
           >
             ← Précédent
           </button>
@@ -499,7 +509,7 @@ function Step2Questionnaire({
         {section < totalSections ? (
           <button
             onClick={() => setSection(section + 1)}
-            className="flex-1 py-3.5 rounded-xl bg-[#141414] border border-[#C41E2A] text-[#F5F5F5] text-sm font-medium hover:bg-[#C41E2A]/10 transition-all"
+            className="flex-1 py-3.5 rounded-xl bg-[#0F0F0F] border border-[#8B1A1A] text-[#F5F5F5] text-sm font-medium hover:bg-[#8B1A1A]/10 transition-all"
           >
             Suivant →
           </button>
@@ -507,7 +517,7 @@ function Step2Questionnaire({
           <button
             onClick={onSubmit}
             disabled={loading}
-            className="flex-1 py-3.5 rounded-xl bg-[#C41E2A] hover:bg-[#E63946] text-white text-sm font-bold uppercase tracking-widest transition-all active:scale-[0.98]"
+            className="flex-1 py-3.5 rounded-xl bg-[#8B1A1A] hover:bg-[#A32020] text-white text-sm font-bold uppercase tracking-widest transition-all active:scale-[0.98]"
           >
             {loading ? 'Envoi…' : 'Envoyer'}
           </button>
@@ -623,11 +633,11 @@ function QSection7({ q, setQ }: { q: typeof initialQuestionnaire; setQ: (k: stri
         rows={5}
         placeholder="Libre à toi…"
       />
-      <div className="rounded-xl border border-[#2A2A2A] bg-[#141414] p-5">
-        <p className="text-sm text-[#888888] leading-relaxed italic">
+      <div className="rounded-xl border border-[#1E1E1E] bg-[#0F0F0F] p-5">
+        <p className="text-sm text-[#484848] leading-relaxed italic">
           "Merci d'avoir pris le temps de remplir ce questionnaire. Ce que tu viens d'écrire, c'est déjà un acte de lucidité sur toi-même. La transformation commence ici."
         </p>
-        <p className="mt-3 text-xs text-[#C41E2A] font-medium">— Robin, Gentleman Létal Club</p>
+        <p className="mt-3 text-xs text-[#8B1A1A] font-medium">— Robin, Gentleman Létal Club</p>
       </div>
     </div>
   )
@@ -659,26 +669,20 @@ function Step3Link({
         subtitle={description}
       />
 
-      <div className="rounded-xl border border-[#2A2A2A] bg-[#141414] p-6 text-center space-y-4">
+      <div className="rounded-xl border border-[#1E1E1E] bg-[#0F0F0F] p-6 text-center space-y-4">
         <div className="text-5xl">{icon}</div>
-        <p className="text-[#888888] text-sm leading-relaxed">{details ?? description}</p>
+        <p className="text-[#484848] text-sm leading-relaxed">{details ?? description}</p>
         <button
-          onClick={hasLink ? onConfirm : undefined}
-          disabled={!hasLink}
-          className="w-full py-4 rounded-xl font-bold text-sm uppercase tracking-widest transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed
-            bg-[#C41E2A] hover:bg-[#E63946] text-white"
+          onClick={onConfirm}
+          className="w-full py-4 rounded-xl font-bold text-sm uppercase tracking-widest transition-all active:scale-[0.98] bg-[#8B1A1A] hover:bg-[#A32020] text-white"
         >
-          {hasLink ? `${cta} →` : 'Lien bientôt disponible'}
+          {hasLink ? `${cta} →` : 'Passer cette étape →'}
         </button>
-        {hasLink ? (
-          <p className="text-xs text-[#555555]">
-            Le lien s'ouvre dans un nouvel onglet. Cette étape sera automatiquement validée.
-          </p>
-        ) : (
-          <p className="text-xs text-[#555555]">
-            Le lien n&apos;est pas encore configuré. Tu pourras compléter cette étape dès qu&apos;il sera ajouté.
-          </p>
-        )}
+        <p className="text-xs text-[#484848]">
+          {hasLink
+            ? "Le lien s'ouvre dans un nouvel onglet. Cette étape sera automatiquement validée."
+            : "Le lien n'est pas encore configuré par Robin. Tu peux passer pour l'instant."}
+        </p>
       </div>
     </div>
   )
@@ -698,8 +702,8 @@ function Step5Call({
     <div className="space-y-6 text-center">
       <div className="text-6xl">🎉</div>
       <h2 className="text-2xl font-black text-[#F5F5F5]">Onboarding terminé.</h2>
-      <p className="text-[#888888]">Ton premier call est réservé. Robin te contactera prochainement.</p>
-      <p className="text-sm text-[#C41E2A]">Redirection vers ton dashboard…</p>
+      <p className="text-[#484848]">Ton premier call est réservé. Robin te contactera prochainement.</p>
+      <p className="text-sm text-[#8B1A1A]">Redirection vers ton dashboard…</p>
     </div>
   )
 
@@ -715,27 +719,27 @@ function Step5Call({
       />
 
       {!unlocked ? (
-        <div className="rounded-xl border border-[#2A2A2A] bg-[#141414] p-8 text-center space-y-4">
+        <div className="rounded-xl border border-[#1E1E1E] bg-[#0F0F0F] p-8 text-center space-y-4">
           <div className="text-4xl">🔒</div>
-          <p className="text-[#888888] text-sm">Complete les étapes 1 à 4 pour débloquer la réservation.</p>
+          <p className="text-[#484848] text-sm">Complete les étapes 1 à 4 pour débloquer la réservation.</p>
           <div className="space-y-2 text-left mt-4">
             {['Contrat signé', 'Questionnaire rempli', 'WhatsApp rejoint', 'Skool rejoint'].map((l, i) => (
-              <p key={i} className="text-xs text-[#555555] flex items-center gap-2">
-                <span className="text-[#C41E2A]">→</span> {l}
+              <p key={i} className="text-xs text-[#484848] flex items-center gap-2">
+                <span className="text-[#8B1A1A]">→</span> {l}
               </p>
             ))}
           </div>
         </div>
       ) : (
-        <div className="rounded-xl border border-[#C41E2A]/30 bg-[#C41E2A]/5 p-6 text-center space-y-4">
+        <div className="rounded-xl border border-[#8B1A1A]/30 bg-[#8B1A1A]/5 p-6 text-center space-y-4">
           <div className="text-5xl">📞</div>
           <p className="text-[#F5F5F5] text-sm font-medium">Tu y es. Robin t'attend.</p>
-          <p className="text-[#888888] text-sm leading-relaxed">
+          <p className="text-[#484848] text-sm leading-relaxed">
             Choisis le créneau qui te convient. Ce call de démarrage est le point de lancement de ta transformation.
           </p>
           <button
             onClick={onBook}
-            className="w-full py-4 rounded-xl bg-[#C41E2A] hover:bg-[#E63946] text-white font-black text-sm uppercase tracking-widest transition-all active:scale-[0.98]"
+            className="w-full py-4 rounded-xl bg-[#8B1A1A] hover:bg-[#A32020] text-white font-black text-sm uppercase tracking-widest transition-all active:scale-[0.98]"
           >
             Réserver mon call →
           </button>
@@ -751,11 +755,11 @@ function StepHeader({ number, title, subtitle }: { number: string; title: string
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-3">
-        <span className="text-[#C41E2A] text-xs font-black tracking-widest uppercase">{number}</span>
-        <div className="h-px flex-1 bg-[#2A2A2A]" />
+        <span className="text-[#8B1A1A] text-xs font-black tracking-widest uppercase">{number}</span>
+        <div className="h-px flex-1 bg-[#1E1E1E]" />
       </div>
       <h1 className="text-xl font-black text-[#F5F5F5] leading-tight">{title}</h1>
-      <p className="text-sm text-[#888888] leading-relaxed">{subtitle}</p>
+      <p className="text-sm text-[#484848] leading-relaxed">{subtitle}</p>
     </div>
   )
 }
@@ -771,9 +775,9 @@ function StepDone({ label, onContinue }: { label: string; onContinue: () => void
 
 function QSectionTitle({ icon, title }: { icon: string; title: string }) {
   return (
-    <div className="flex items-center gap-2 pb-1 border-b border-[#2A2A2A]">
+    <div className="flex items-center gap-2 pb-1 border-b border-[#1E1E1E]">
       <span>{icon}</span>
-      <span className="text-xs font-black uppercase tracking-widest text-[#888888]">{title}</span>
+      <span className="text-xs font-black uppercase tracking-widest text-[#484848]">{title}</span>
     </div>
   )
 }
@@ -786,13 +790,13 @@ function QInput({
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="block text-xs font-medium text-[#888888] uppercase tracking-wider">{label}</label>
+      <label className="block text-xs font-medium text-[#484848] uppercase tracking-wider">{label}</label>
       <input
         type={type}
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full bg-[#141414] border border-[#2A2A2A] rounded-lg px-4 py-3 text-sm text-[#F5F5F5] placeholder-[#444444] focus:outline-none focus:border-[#C41E2A] transition-colors"
+        className="w-full bg-[#0F0F0F] border border-[#1E1E1E] rounded-lg px-4 py-3 text-sm text-[#F5F5F5] placeholder-[#444444] focus:outline-none focus:border-[#8B1A1A] transition-colors"
       />
     </div>
   )
@@ -806,13 +810,13 @@ function QTextarea({
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="block text-xs font-medium text-[#888888] uppercase tracking-wider">{label}</label>
+      <label className="block text-xs font-medium text-[#484848] uppercase tracking-wider">{label}</label>
       <textarea
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
         rows={rows}
-        className="w-full bg-[#141414] border border-[#2A2A2A] rounded-lg px-4 py-3 text-sm text-[#F5F5F5] placeholder-[#444444] focus:outline-none focus:border-[#C41E2A] transition-colors resize-none"
+        className="w-full bg-[#0F0F0F] border border-[#1E1E1E] rounded-lg px-4 py-3 text-sm text-[#F5F5F5] placeholder-[#444444] focus:outline-none focus:border-[#8B1A1A] transition-colors resize-none"
       />
     </div>
   )
@@ -825,11 +829,11 @@ function QSelect({
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="block text-xs font-medium text-[#888888] uppercase tracking-wider">{label}</label>
+      <label className="block text-xs font-medium text-[#484848] uppercase tracking-wider">{label}</label>
       <select
         value={value}
         onChange={e => onChange(e.target.value)}
-        className="w-full bg-[#141414] border border-[#2A2A2A] rounded-lg px-4 py-3 text-sm text-[#F5F5F5] focus:outline-none focus:border-[#C41E2A] transition-colors appearance-none"
+        className="w-full bg-[#0F0F0F] border border-[#1E1E1E] rounded-lg px-4 py-3 text-sm text-[#F5F5F5] focus:outline-none focus:border-[#8B1A1A] transition-colors appearance-none"
       >
         <option value="">Choisir…</option>
         {options.map(o => <option key={o} value={o}>{o}</option>)}
@@ -846,8 +850,8 @@ function QSlider({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <label className="text-xs font-medium text-[#888888] uppercase tracking-wider">{label}</label>
-        <span className="text-lg font-black text-[#C41E2A]">{value}/10</span>
+        <label className="text-xs font-medium text-[#484848] uppercase tracking-wider">{label}</label>
+        <span className="text-lg font-black text-[#8B1A1A]">{value}/10</span>
       </div>
       <input
         type="range"
@@ -855,9 +859,9 @@ function QSlider({
         max={10}
         value={value}
         onChange={e => onChange(Number(e.target.value))}
-        className="w-full accent-[#C41E2A]"
+        className="w-full accent-[#8B1A1A]"
       />
-      <div className="flex justify-between text-xs text-[#555555]">
+      <div className="flex justify-between text-xs text-[#484848]">
         <span>1 — Très mauvais</span>
         <span>10 — Excellent</span>
       </div>
@@ -867,10 +871,10 @@ function QSlider({
 
 function LoadingScreen() {
   return (
-    <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
+    <div className="min-h-screen bg-[#060606] flex items-center justify-center">
       <div className="space-y-3 text-center">
-        <div className="text-[#C41E2A] font-black tracking-widest text-lg uppercase">GLC</div>
-        <div className="text-[#555555] text-xs animate-pulse">Chargement…</div>
+        <div className="text-[#8B1A1A] font-black tracking-widest text-lg uppercase">GLC</div>
+        <div className="text-[#484848] text-xs animate-pulse">Chargement…</div>
       </div>
     </div>
   )

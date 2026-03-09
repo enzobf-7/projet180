@@ -1,5 +1,16 @@
+import { createClient } from '@supabase/supabase-js'
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+
+// Admin client for routing queries — bypasses RLS (which has infinite recursion
+// on the profiles table when the admin policy queries profiles itself)
+function createAdminClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  )
+}
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
@@ -38,7 +49,9 @@ export async function updateSession(request: NextRequest) {
 
   // Logged in → redirect from login to appropriate page
   if (user && path === '/') {
-    const { data: profile } = await supabase
+    const admin = createAdminClient()
+
+    const { data: profile } = await admin
       .from('profiles')
       .select('role')
       .eq('id', user.id)
@@ -49,11 +62,10 @@ export async function updateSession(request: NextRequest) {
     if (profile?.role === 'admin') {
       url.pathname = '/admin'
     } else {
-      // Check onboarding status
-      const { data: onboarding } = await supabase
+      const { data: onboarding } = await admin
         .from('onboarding_progress')
         .select('completed_at')
-        .eq('client_id', user.id)
+        .eq('user_id', user.id)
         .single()
 
       url.pathname = onboarding?.completed_at ? '/dashboard' : '/onboarding'
@@ -64,7 +76,9 @@ export async function updateSession(request: NextRequest) {
 
   // Block clients from admin routes
   if (user && path.startsWith('/admin')) {
-    const { data: profile } = await supabase
+    const admin = createAdminClient()
+
+    const { data: profile } = await admin
       .from('profiles')
       .select('role')
       .eq('id', user.id)
