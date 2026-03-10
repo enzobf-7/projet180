@@ -67,6 +67,7 @@ export default function OnboardingPage() {
   })
   const [userId, setUserId] = useState<string | null>(null)
   const [contractAccepted, setContractAccepted] = useState(false)
+  const [signatureName, setSignatureName] = useState('')
   const [questionnaire, setQuestionnaire] = useState(initialQuestionnaire)
   const [questionnaireSection, setQuestionnaireSection] = useState(1)
   const [loading, setLoading] = useState(false)
@@ -78,6 +79,16 @@ export default function OnboardingPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/'); return }
       setUserId(user.id)
+
+      // Pre-fill signature name from profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('id', user.id)
+        .single()
+      if (profile) {
+        setSignatureName([profile.first_name, profile.last_name].filter(Boolean).join(' '))
+      }
 
       // Load onboarding progress
       const { data: prog } = await supabase
@@ -152,11 +163,13 @@ export default function OnboardingPage() {
   // ── Step 1 — Contrat ──
   async function handleSignContract() {
     setLoading(true)
-    // Record signature: user_id, timestamp, IP captured server-side in a real scenario
     await supabase.from('onboarding_progress').update({
       step1_contract: true,
-      step1_signed_at: new Date().toISOString()
+      step1_signed_at: new Date().toISOString(),
+      step1_signature_name: signatureName.trim(),
     }).eq('user_id', userId)
+    // Email Robin — best-effort, non bloquant
+    fetch('/api/onboarding/contract-signed', { method: 'POST' }).catch(() => {})
     setProgress(prev => ({ ...prev, step1_contract: true }))
     setCurrentStep(2)
     setLoading(false)
@@ -278,6 +291,8 @@ export default function OnboardingPage() {
             pdfUrl={settings.contract_pdf_url}
             accepted={contractAccepted}
             onAccept={setContractAccepted}
+            signatureName={signatureName}
+            onSignatureNameChange={setSignatureName}
             onSign={handleSignContract}
             loading={loading}
             done={progress.step1_contract}
@@ -396,11 +411,13 @@ function StepNav({
 // ─── Step 1 — Contrat ────────────────────────────────────────────────────────
 
 function Step1Contract({
-  pdfUrl, accepted, onAccept, onSign, loading, done, onContinue
+  pdfUrl, accepted, onAccept, signatureName, onSignatureNameChange, onSign, loading, done, onContinue
 }: {
   pdfUrl: string
   accepted: boolean
   onAccept: (v: boolean) => void
+  signatureName: string
+  onSignatureNameChange: (v: string) => void
   onSign: () => void
   loading: boolean
   done: boolean
@@ -454,10 +471,25 @@ function Step1Contract({
         </span>
       </label>
 
+      {/* Signature name input */}
+      <div className="space-y-2">
+        <label className="block text-xs text-[#484848] uppercase tracking-widest">
+          Signature — tape ton prénom et nom complet
+        </label>
+        <input
+          type="text"
+          value={signatureName}
+          onChange={e => onSignatureNameChange(e.target.value)}
+          placeholder="Prénom Nom"
+          className="w-full bg-[#0F0F0F] border border-[#1E1E1E] rounded-lg px-4 py-3 text-[#F2F2F5] placeholder-[#484848] focus:outline-none focus:border-[#8B1A1A] transition-colors"
+          style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '15px' }}
+        />
+      </div>
+
       {/* Sign button */}
       <GlcButton
         onClick={onSign}
-        disabled={!accepted}
+        disabled={!accepted || !signatureName.trim()}
         loading={loading}
         fullWidth
       >
@@ -465,7 +497,7 @@ function Step1Contract({
       </GlcButton>
 
       <p className="text-center text-xs text-[#484848]">
-        Ta signature électronique — avec la date, l'heure et ton IP — est enregistrée et juridiquement valide.
+        Ta signature — nom, date, heure — est enregistrée et constitue une preuve légale d'acceptation.
       </p>
     </div>
   )
