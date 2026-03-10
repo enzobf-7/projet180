@@ -103,6 +103,18 @@ export default function OnboardingPage() {
         else { router.push('/dashboard'); return }
       }
 
+      // Load questionnaire responses if already completed
+      if (prog?.step2_questionnaire) {
+        const { data: qr } = await supabase
+          .from('questionnaire_responses')
+          .select('responses')
+          .eq('user_id', user.id)
+          .single()
+        if (qr?.responses) {
+          setQuestionnaire(prev => ({ ...prev, ...(qr.responses as typeof initialQuestionnaire) }))
+        }
+      }
+
       // Load app settings
       const { data: appSettings } = await supabase
         .from('app_settings')
@@ -247,9 +259,14 @@ export default function OnboardingPage() {
           progress={progress}
           allPrev4Done={allPrev4Done}
           onStepClick={(s) => {
-            // Only allow going to completed steps or current
             const stepKey = `step${s}_${['contract','questionnaire','whatsapp','skool','call'][s-1]}` as keyof OnboardingProgress
-            if (progress[stepKey] || s === currentStep) setCurrentStep(s)
+            const accessible =
+              s === 1 ||
+              (s === 2 && progress.step1_contract) ||
+              (s === 3 && progress.step2_questionnaire) ||
+              (s === 4 && progress.step3_whatsapp) ||
+              (s === 5 && allPrev4Done)
+            if (progress[stepKey] || s === currentStep || accessible) setCurrentStep(s)
           }}
         />
       </div>
@@ -264,6 +281,7 @@ export default function OnboardingPage() {
             onSign={handleSignContract}
             loading={loading}
             done={progress.step1_contract}
+            onContinue={() => setCurrentStep(2)}
           />
         )}
         {currentStep === 2 && (
@@ -275,6 +293,7 @@ export default function OnboardingPage() {
             onSubmit={handleSubmitQuestionnaire}
             loading={loading}
             done={progress.step2_questionnaire}
+            onContinue={() => setCurrentStep(3)}
           />
         )}
         {currentStep === 3 && (
@@ -287,6 +306,7 @@ export default function OnboardingPage() {
             url={settings.whatsapp_link}
             done={progress.step3_whatsapp}
             onConfirm={() => handleLinkClick('step3_whatsapp', settings.whatsapp_link, 4)}
+            onContinue={() => setCurrentStep(4)}
           />
         )}
         {currentStep === 4 && (
@@ -299,6 +319,7 @@ export default function OnboardingPage() {
             url={settings.skool_link}
             done={progress.step4_skool}
             onConfirm={() => handleLinkClick('step4_skool', settings.skool_link, 5)}
+            onContinue={() => setCurrentStep(5)}
           />
         )}
         {currentStep === 5 && (
@@ -375,7 +396,7 @@ function StepNav({
 // ─── Step 1 — Contrat ────────────────────────────────────────────────────────
 
 function Step1Contract({
-  pdfUrl, accepted, onAccept, onSign, loading, done
+  pdfUrl, accepted, onAccept, onSign, loading, done, onContinue
 }: {
   pdfUrl: string
   accepted: boolean
@@ -383,8 +404,9 @@ function Step1Contract({
   onSign: () => void
   loading: boolean
   done: boolean
+  onContinue: () => void
 }) {
-  if (done) return <StepDone label="Contrat signé" onContinue={() => {}} />
+  if (done) return <StepDone label="Contrat signé" onContinue={onContinue} />
 
   return (
     <div className="space-y-8">
@@ -452,7 +474,7 @@ function Step1Contract({
 // ─── Step 2 — Questionnaire ───────────────────────────────────────────────────
 
 function Step2Questionnaire({
-  questionnaire, section, setSection, setQ, onSubmit, loading, done
+  questionnaire, section, setSection, setQ, onSubmit, loading, done, onContinue
 }: {
   questionnaire: typeof initialQuestionnaire
   section: number
@@ -461,8 +483,9 @@ function Step2Questionnaire({
   onSubmit: () => void
   loading: boolean
   done: boolean
+  onContinue: () => void
 }) {
-  if (done) return <StepDone label="Questionnaire complété" onContinue={() => {}} />
+  if (done) return <StepDone label="Questionnaire complété" onContinue={onContinue} />
 
   const totalSections = 7
 
@@ -656,7 +679,7 @@ function QSection7({ q, setQ }: { q: typeof initialQuestionnaire; setQ: (k: stri
 // ─── Step 3 & 4 — Link Steps ──────────────────────────────────────────────────
 
 function Step3Link({
-  title, description, details, icon, cta, url, done, onConfirm
+  title, description, details, icon, cta, url, done, onConfirm, onContinue
 }: {
   title: string
   description: string
@@ -666,8 +689,9 @@ function Step3Link({
   url: string
   done: boolean
   onConfirm: () => void
+  onContinue: () => void
 }) {
-  if (done) return <StepDone label={title} onContinue={() => {}} />
+  if (done) return <StepDone label={title} onContinue={onContinue} />
 
   const hasLink = !!url && url.trim() !== '' && url.trim() !== '#'
 
@@ -768,15 +792,20 @@ function StepHeader({ number, title, subtitle }: { number: string; title: string
   )
 }
 
-function StepDone({ label }: { label: string; onContinue: () => void }) {
+function StepDone({ label, onContinue }: { label: string; onContinue: () => void }) {
   return (
-    <div className="rounded-xl border border-[#1E1E1E] bg-[#0F0F0F] p-10 text-center space-y-5">
-      <div className="mx-auto w-14 h-14 rounded-full border border-[#22C55E]/30 bg-[#22C55E]/5 flex items-center justify-center">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
+    <div className="space-y-6">
+      <div className="rounded-xl border border-[#1E1E1E] bg-[#0F0F0F] p-10 text-center space-y-5">
+        <div className="mx-auto w-14 h-14 rounded-full border border-[#22C55E]/30 bg-[#22C55E]/5 flex items-center justify-center">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </div>
+        <p className="text-[#F2F2F5] text-sm font-black uppercase tracking-widest">{label}</p>
       </div>
-      <p className="text-[#F2F2F5] text-sm font-black uppercase tracking-widest">{label}</p>
+      <GlcButton onClick={onContinue} fullWidth>
+        Continuer →
+      </GlcButton>
     </div>
   )
 }
