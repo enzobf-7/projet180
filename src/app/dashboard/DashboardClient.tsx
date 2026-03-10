@@ -8,16 +8,15 @@ import { getXpDelta } from './utils'
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const C = {
-  bg:      '#060606',
+  bg:      '#0B0B0B',
   surface: '#0F0F0F',
-  sidebar: '#080808',
+  sidebar: '#0A0A0A',
   border:  '#1E1E1E',
   muted:   '#484848',
   dimmed:  '#161616',
   text:    '#F0F0F0',
   accent:  '#8B1A1A',
   accentL: '#A32020',
-  gold:    '#C9A84C',
   green:   '#15803D',
   greenL:  '#22C55E',
 }
@@ -287,14 +286,9 @@ export default function DashboardClient({
           0%, 100% { transform: scale(1);   opacity: 1;   }
           50%      { transform: scale(1.6); opacity: 0.35; }
         }
-        @keyframes glc-glow-gold {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(201,168,76,0); }
-          50%      { box-shadow: 0 0 28px 6px rgba(201,168,76,0.22); }
-        }
         .glc-fade      { animation: glc-fade      0.45s cubic-bezier(0.2,0,0.1,1) both; }
         .glc-slide     { animation: glc-slide     0.4s  cubic-bezier(0.2,0,0.1,1) both; }
         .glc-ping      { animation: glc-ping      1.8s  ease-in-out infinite; }
-        .glc-glow-gold { animation: glc-glow-gold 2.4s  ease-in-out infinite; }
         @keyframes glc-xp-rise {
           0%   { opacity: 0; transform: translateY(0) scale(0.8); }
           15%  { opacity: 1; transform: translateY(-4px) scale(1.15); }
@@ -365,7 +359,7 @@ export default function DashboardClient({
           pointerEvents: 'none',
         }}>
           <div style={{ textAlign: 'center', animation: 'glc-levelup-card 2.8s cubic-bezier(0.34,1.56,0.64,1) both' }}>
-            <div style={{ ...M, fontSize: '11px', letterSpacing: '0.2em', color: C.gold, marginBottom: 12, textTransform: 'uppercase' as const }}>
+            <div style={{ ...M, fontSize: '11px', letterSpacing: '0.2em', color: C.accent, marginBottom: 12, textTransform: 'uppercase' as const }}>
               Niveau supérieur
             </div>
             <div style={{ ...D, fontSize: '52px', fontWeight: 800, color: C.text, letterSpacing: '0.02em', lineHeight: 1 }}>
@@ -532,156 +526,59 @@ export default function DashboardClient({
 
         {/* ── Hero ────────────────────────────────────────────────────────────*/}
         <div style={{
-          background: `linear-gradient(160deg, #100808 0%, ${C.bg} 100%)`,
+          background: `linear-gradient(160deg, #0D0608 0%, ${C.bg} 100%)`,
           borderBottom: `1px solid ${C.border}`,
-          padding: isMobile ? '32px 16px 28px' : '52px 40px 44px',
+          padding: isMobile ? '16px 16px' : '20px 40px',
         }}>
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 32, flexWrap: 'wrap' }}>
-
-            {/* Left */}
-            <div>
-              <div style={{ ...D, fontWeight: 700, fontSize: '10px', letterSpacing: '0.4em', color: C.muted, textTransform: 'uppercase' as const, marginBottom: 12 }}>
-                Programme 180 Jours · Gentleman Létal Club
-              </div>
-              <h1 style={{
-                ...D, fontWeight: 900,
-                fontSize: 'clamp(56px, 7.5vw, 104px)',
-                lineHeight: 0.88, letterSpacing: '0.02em',
-                textTransform: 'uppercase' as const,
-                color: C.text, margin: '0 0 20px',
-              }}>
-                {firstName}
-              </h1>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' as const }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 10 : 16, flexWrap: 'wrap' as const }}>
+            <span style={{
+              ...D, fontWeight: 700, fontSize: '22px',
+              textTransform: 'uppercase' as const,
+              letterSpacing: '0.04em', color: C.text,
+            }}>
+              {firstName}
+            </span>
+            <span style={{ color: C.border, fontSize: '16px', lineHeight: 1 }}>·</span>
+            <span style={{
+              ...D, fontWeight: 700, fontSize: '13px',
+              letterSpacing: '0.2em', textTransform: 'uppercase' as const,
+              color: C.accent, borderLeft: `2px solid ${C.accent}`, paddingLeft: 8,
+            }}>
+              {level.name}
+            </span>
+            {myRank && (
+              <>
+                <span style={{ color: C.border, fontSize: '16px', lineHeight: 1 }}>·</span>
                 <span style={{
-                  ...D, fontWeight: 700, fontSize: '14px', letterSpacing: '0.2em',
+                  ...M, fontSize: '11px',
+                  color: myRank <= 3 ? C.accent : C.muted,
+                  border: `1px solid ${myRank <= 3 ? C.accent : C.border}`,
+                  padding: '2px 8px',
+                }}>
+                  #{myRank} sur {leaderboard.length}
+                </span>
+              </>
+            )}
+            {allDone && (
+              <>
+                <span style={{ color: C.border, fontSize: '16px', lineHeight: 1 }}>·</span>
+                <span style={{
+                  ...D, fontWeight: 900, fontSize: '11px', letterSpacing: '0.2em',
                   textTransform: 'uppercase' as const,
                   color: C.accent,
-                  borderLeft: `3px solid ${C.accent}`,
-                  paddingLeft: 10,
+                  border: `1px solid ${C.accent}40`,
+                  padding: '3px 10px',
                 }}>
-                  {level.name}
+                  Mission accomplie
                 </span>
-                {myRank && (
-                  <span style={{
-                    ...M, fontSize: '11px', color: myRank <= 3 ? C.gold : C.muted,
-                    border: `1px solid ${myRank <= 3 ? C.gold : C.border}`,
-                    padding: '2px 10px',
-                  }}>
-                    #{myRank} sur {leaderboard.length}
-                  </span>
-                )}
-                {allDone && (
-                  <span style={{
-                    ...D, fontWeight: 900, fontSize: '11px', letterSpacing: '0.2em',
-                    textTransform: 'uppercase' as const,
-                    color: C.gold,
-                    border: `1px solid ${C.gold}`,
-                    padding: '3px 10px',
-                  }}>
-                    Mission accomplie
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Right: day counter + countdown */}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 16, flexShrink: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-                <span style={{ ...M, fontWeight: 700, fontSize: '88px', lineHeight: 1, color: C.text, letterSpacing: '-0.04em' }}>
-                  {String(jourX).padStart(3, '0')}
-                </span>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <span style={{ ...D, fontWeight: 700, fontSize: '12px', letterSpacing: '0.2em', color: C.muted, textTransform: 'uppercase' as const }}>/180</span>
-                  <span style={{ ...D, fontWeight: 700, fontSize: '9px', letterSpacing: '0.15em', color: C.muted, textTransform: 'uppercase' as const }}>JOURS</span>
-                </div>
-              </div>
-              {onboardingDate && (
-                <div style={{ display: 'flex', gap: 6 }}>
-                  {[
-                    { v: countdown.d, label: 'JOURS' },
-                    { v: countdown.h, label: 'H' },
-                    { v: countdown.m, label: 'MIN' },
-                    { v: countdown.s, label: 'SEC' },
-                  ].map(({ v, label }, i) => (
-                    <div key={i} style={{
-                      background: C.surface,
-                      border: `1px solid ${i === 3 ? C.accent + '40' : C.border}`,
-                      padding: '10px 14px',
-                      textAlign: 'center' as const,
-                      minWidth: 54,
-                    }}>
-                      <div style={{ ...M, fontSize: '22px', fontWeight: 700, color: i === 3 ? C.accent : C.text, lineHeight: 1 }}>{p2(v)}</div>
-                      <div style={{ ...D, fontWeight: 700, fontSize: '8px', letterSpacing: '0.2em', color: C.muted, marginTop: 5 }}>{label}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+              </>
+            )}
           </div>
         </div>
-
-        {/* ── Quote strip / Journée parfaite banner ───────────────────────────*/}
-        {allDone ? (
-          <div className="glc-glow-gold" style={{
-            background: 'linear-gradient(90deg, #1A1400, #0A0800, #1A1400)',
-            border: `1px solid ${C.gold}40`,
-            borderLeft: `4px solid ${C.gold}`,
-            borderRight: 'none',
-            padding: '14px 40px',
-          }}>
-            <span style={{
-              ...D, fontWeight: 900, fontSize: '12px',
-              letterSpacing: '0.32em', textTransform: 'uppercase' as const,
-              color: C.gold,
-              whiteSpace: 'nowrap',
-            }}>
-              Journée parfaite — toutes les missions accomplies
-            </span>
-          </div>
-        ) : (
-          <div style={{ background: C.accent, padding: '13px 40px', overflow: 'hidden' }}>
-            <span style={{
-              ...D, fontWeight: 900, fontSize: '12px',
-              letterSpacing: '0.32em', textTransform: 'uppercase' as const,
-              color: 'rgba(255,255,255,0.88)',
-              whiteSpace: 'nowrap',
-            }}>
-              LE CONFORT EST L&apos;ENNEMI DU PROGRÈS &nbsp;·&nbsp; DISCIPLINE &nbsp;·&nbsp; EXCELLENCE &nbsp;·&nbsp; IDENTITÉ
-            </span>
-          </div>
-        )}
 
         {/* ── Content ─────────────────────────────────────────────────────── */}
         <div style={{ padding: isMobile ? '24px 16px 64px' : '36px 40px 80px' }}>
 
-          {/* Stats strip */}
-          <div className="glc-fade" style={{
-            display: 'grid', gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : 'repeat(5, 1fr)',
-            background: C.surface,
-            border: `1px solid ${C.border}`,
-            marginBottom: 36,
-          }}>
-            {[
-              { label: 'XP Total',    val: <AnimatedCounter to={localXP} />,               unit: 'pts',                            color: C.accent },
-              { label: 'XP Semaine',  val: <AnimatedCounter to={weeklyXP} />,               unit: 'pts',                            color: C.gold   },
-              { label: 'Série',       val: hotStreak ? `🔥 ${streak}` : streak,             unit: streak !== 1 ? 'jours' : 'jour',  color: hotStreak ? C.gold : C.text },
-              { label: 'Record',      val: record,                                           unit: record !== 1 ? 'jours' : 'jour',  color: C.text   },
-              { label: 'Classement',  val: myRank ? `#${myRank}` : '—',                     unit: `/ ${leaderboard.length || '—'}`, color: myRank && myRank <= 3 ? C.gold : C.text },
-            ].map((stat, i, arr) => (
-              <div key={i} style={{ padding: '20px 18px', borderRight: i < arr.length - 1 ? `1px solid ${C.border}` : 'none', borderTop: i === 0 ? `2px solid ${C.accent}` : '2px solid transparent' }}>
-                <div style={{ ...D, fontWeight: 700, fontSize: '9px', letterSpacing: '0.25em', color: C.muted, textTransform: 'uppercase' as const, marginBottom: 8 }}>
-                  {stat.label}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 5 }}>
-                  <span style={{ ...M, fontSize: '28px', fontWeight: 700, color: stat.color, lineHeight: 1 }}>
-                    {stat.val}
-                  </span>
-                  <span style={{ ...M, fontSize: '10px', color: C.muted }}>{stat.unit}</span>
-                </div>
-              </div>
-            ))}
-          </div>
 
           {/* Two-column grid */}
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 320px', gap: 24, alignItems: 'start', marginBottom: 48 }}>
@@ -697,7 +594,7 @@ export default function DashboardClient({
                   <svg width={72} height={72} style={{ transform: 'rotate(-90deg)', display: 'block' }}>
                     <circle cx={36} cy={36} r={28} fill="none" stroke={C.border} strokeWidth={5} />
                     <circle cx={36} cy={36} r={28} fill="none"
-                      stroke={allDone ? C.gold : C.accent}
+                      stroke={C.accent}
                       strokeWidth={5}
                       strokeDasharray={2 * Math.PI * 28}
                       strokeDashoffset={2 * Math.PI * 28 * (1 - completedPct / 100)}
@@ -737,7 +634,7 @@ export default function DashboardClient({
                           background:  done ? `${C.accent}15` : C.bg,
                           border:      `1px solid ${done ? `${C.accent}40` : C.dimmed}`,
                           borderLeft:  done ? `3px solid ${C.accent}` : '3px solid transparent',
-                          padding:     '14px 20px',
+                          padding:     '18px 22px',
                           cursor:      loadingId ? 'wait' : 'pointer',
                           textAlign:   'left' as const,
                           opacity:     loading ? 0.6 : 1,
@@ -831,8 +728,8 @@ export default function DashboardClient({
               {/* Streak card */}
               <div className="glc-fade" style={{
                 background: C.surface,
-                border: legendStreak ? `1px solid ${C.gold}50` : `1px solid ${C.border}`,
-                borderTop: legendStreak ? `2px solid ${C.gold}` : hotStreak ? `2px solid ${C.accentL}` : `1px solid ${C.border}`,
+                border: legendStreak ? `1px solid ${C.accentL}50` : `1px solid ${C.border}`,
+                borderTop: legendStreak ? `2px solid ${C.accentL}` : hotStreak ? `2px solid ${C.accentL}` : `1px solid ${C.border}`,
                 padding: '20px 24px',
                 animationDelay: '0.2s',
               }}>
@@ -843,7 +740,7 @@ export default function DashboardClient({
                   {hotStreak && <span style={{ fontSize: '14px', lineHeight: 1 }}>🔥</span>}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 16 }}>
-                  <span style={{ ...M, fontSize: '32px', fontWeight: 700, color: legendStreak ? C.gold : hotStreak ? C.accentL : C.text, lineHeight: 1 }}>
+                  <span style={{ ...M, fontSize: '32px', fontWeight: 700, color: legendStreak ? C.accentL : hotStreak ? C.accentL : C.text, lineHeight: 1 }}>
                     {streak}
                   </span>
                   <span style={{ ...M, fontSize: '11px', color: C.muted }}>jours</span>
@@ -859,8 +756,8 @@ export default function DashboardClient({
                     const reached = streak >= ms
                     return (
                       <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                        <div style={{ height: 12, width: '100%', background: reached ? (ms >= 30 ? C.gold : C.accentL) : C.border, borderRadius: 2 }} />
-                        <span style={{ ...M, fontSize: '8px', color: reached ? (ms >= 30 ? C.gold : C.text) : C.muted }}>
+                        <div style={{ height: 12, width: '100%', background: reached ? C.accentL : C.border, borderRadius: 2 }} />
+                        <span style={{ ...M, fontSize: '8px', color: reached ? C.text : C.muted }}>
                           {ms}
                         </span>
                       </div>
@@ -967,6 +864,38 @@ export default function DashboardClient({
             </div>
           </div>
 
+          {/* ── Stats strip ─────────────────────────────────────────────────── */}
+          <div className="glc-fade" style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            borderTop: `1px solid ${C.border}`,
+            borderBottom: `1px solid ${C.border}`,
+            animationDelay: '0.35s',
+          }}>
+            {[
+              { label: 'XP Total',   value: localXP,   color: C.accent, mono: true },
+              { label: 'XP Semaine', value: weeklyXP,  color: C.text,   mono: true },
+              { label: `Série ${hotStreak ? '🔥' : ''}`, value: streak, color: C.text, mono: true },
+              { label: 'Classement', value: myRank ?? '—', color: myRank && myRank <= 3 ? C.accent : C.text, mono: false },
+            ].map((stat, i, arr) => (
+              <div key={stat.label} style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                padding: isMobile ? '14px 8px' : '16px 12px',
+                borderRight: i < arr.length - 1 ? `1px solid ${C.border}` : 'none',
+              }}>
+                <span style={{ ...D, fontWeight: 900, fontSize: isMobile ? '22px' : '26px', color: stat.color, lineHeight: 1 }}>
+                  {stat.mono
+                    ? (typeof stat.value === 'number' ? <AnimatedCounter to={stat.value} /> : stat.value)
+                    : (typeof stat.value === 'number' ? `#${stat.value}` : stat.value)
+                  }
+                </span>
+                <span style={{ ...D, fontWeight: 700, fontSize: '9px', letterSpacing: '0.2em', color: C.muted, textTransform: 'uppercase' as const, marginTop: 4 }}>
+                  {stat.label}
+                </span>
+              </div>
+            ))}
+          </div>
+
           {/* ── Leaderboard ─────────────────────────────────────────────────── */}
           {leaderboard.length > 0 && (
             <div className="glc-fade" style={{ animationDelay: '0.4s' }}>
@@ -1005,7 +934,7 @@ export default function DashboardClient({
 
                 {leaderboard.slice(0, 20).map((entry, i) => {
                   const isTop3    = entry.rank <= 3
-                  const rankColor = entry.rank === 1 ? C.gold : entry.rank === 2 ? '#A0AABA' : entry.rank === 3 ? '#B07840' : C.muted
+                  const rankColor = entry.rank === 1 ? C.accent : entry.rank === 2 ? '#A0AABA' : entry.rank === 3 ? '#B07840' : C.muted
                   const rankLabel = entry.rank === 1 ? '①' : entry.rank === 2 ? '②' : entry.rank === 3 ? '③' : String(entry.rank)
                   const xpPct     = Math.round((entry.xp / maxXP) * 100)
 
@@ -1029,7 +958,7 @@ export default function DashboardClient({
                       <div style={{
                         position: 'absolute', left: 0, top: 0, bottom: 0,
                         width: `${xpPct}%`, pointerEvents: 'none',
-                        background: isTop3 ? `${C.gold}06` : `${C.muted}04`,
+                        background: isTop3 ? `${C.accent}06` : `${C.muted}04`,
                       }} />
 
                       <div style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
@@ -1068,7 +997,7 @@ export default function DashboardClient({
                       </div>
 
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', position: 'relative' }}>
-                        <span style={{ ...M, fontSize: '12px', fontWeight: 700, color: entry.streak > 0 ? C.gold : C.dimmed }}>
+                        <span style={{ ...M, fontSize: '12px', fontWeight: 700, color: entry.streak > 0 ? C.text : C.dimmed }}>
                           {entry.streak > 0 ? `${entry.streak}d` : '—'}
                         </span>
                       </div>
@@ -1076,7 +1005,7 @@ export default function DashboardClient({
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', position: 'relative' }}>
                         <span style={{
                           ...M, fontSize: '13px', fontWeight: 700,
-                          color: isTop3 ? C.gold : entry.isMe ? C.accent : C.text,
+                          color: isTop3 ? C.accent : entry.isMe ? C.accent : C.text,
                         }}>
                           {entry.xp.toLocaleString('fr-FR')}
                         </span>
@@ -1111,7 +1040,7 @@ export default function DashboardClient({
                 {item.href === '/programme'  && <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>}
                 {item.href === '/messagerie' && <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>}
                 {item.href === '/profil'     && <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>}
-                <span style={{ ...D, fontWeight: 700, fontSize: '9px', letterSpacing: '0.15em', textTransform: 'uppercase' as const }}>{item.label}</span>
+                <span style={{ ...D, fontWeight: 700, fontSize: '11px', letterSpacing: '0.12em', textTransform: 'uppercase' as const }}>{item.label}</span>
               </a>
             ))}
           </div>

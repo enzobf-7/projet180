@@ -370,7 +370,7 @@ function StepNav({
   ]
 
   return (
-    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+    <div className="flex gap-2">
       {steps.map(s => {
         const isActive = currentStep === s.n
         const isLocked = s.locked && !s.done
@@ -380,16 +380,17 @@ function StepNav({
             key={s.n}
             onClick={() => !isLocked && onStepClick(s.n)}
             className={`
-              flex items-center gap-2 px-4 py-3 rounded-lg border text-sm font-medium whitespace-nowrap transition-all
-              ${isActive 
-                ? 'border-[#8B1A1A] bg-[#8B1A1A]/10 text-[#F5F5F5]' 
-                : s.done 
+              flex-1 flex items-center justify-center gap-2 px-2 py-3 rounded-lg border font-medium transition-all
+              ${isActive
+                ? 'border-[#8B1A1A] bg-[#8B1A1A]/10 text-[#F5F5F5]'
+                : s.done
                 ? 'border-[#22C55E]/30 bg-[#22C55E]/5 text-[#22C55E] cursor-pointer'
                 : isLocked
                 ? 'border-[#1E1E1E] bg-[#0F0F0F] text-[#444444] cursor-not-allowed'
                 : 'border-[#1E1E1E] bg-[#0F0F0F] text-[#484848]'
               }
             `}
+            style={{ fontSize: 13, letterSpacing: '0.04em' }}
           >
             {isLocked ? (
               <span>🔒</span>
