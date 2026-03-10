@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        sender: { name: 'GLC App', email: 'noreply@glc-app.com' },
+        sender: { name: 'GLC App', email: 'noreply@gentlemanletal.club' },
         to: [{ email: coachEmail, name: 'Robin' }],
         subject: `${clientName} vient de terminer son onboarding`,
         htmlContent: `
