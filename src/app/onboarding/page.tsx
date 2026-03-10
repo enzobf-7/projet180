@@ -72,6 +72,7 @@ export default function OnboardingPage() {
   const [questionnaireSection, setQuestionnaireSection] = useState(1)
   const [loading, setLoading] = useState(false)
   const [pageLoading, setPageLoading] = useState(true)
+  const [redirecting, setRedirecting] = useState(false)
 
   // ── Load data ──
   useEffect(() => {
@@ -214,7 +215,7 @@ export default function OnboardingPage() {
         .update({ completed_at: new Date().toISOString() })
         .eq('user_id', userId)
     }
-    setTimeout(() => router.push('/dashboard'), 800)
+    setRedirecting(true)
   }
 
   const setQ = (key: string, value: string | number) => {
@@ -222,6 +223,7 @@ export default function OnboardingPage() {
   }
 
   if (pageLoading) return <LoadingScreen />
+  if (redirecting) return <RedirectScreen onDone={() => router.push('/dashboard')} />
 
   return (
     <div className="min-h-screen bg-[#060606] text-[#F5F5F5]" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
@@ -380,7 +382,7 @@ function StepNav({
             key={s.n}
             onClick={() => !isLocked && onStepClick(s.n)}
             className={`
-              flex-1 flex items-center justify-center gap-2 px-2 py-3 rounded-lg border font-medium transition-all
+              flex-1 flex items-center justify-center gap-2 px-2 py-5 rounded-lg border font-medium transition-all
               ${isActive
                 ? 'border-[#8B1A1A] bg-[#8B1A1A]/10 text-[#F5F5F5]'
                 : s.done
@@ -465,14 +467,14 @@ function Step1Contract({
             {accepted && <span className="text-white text-xs">✓</span>}
           </div>
         </div>
-        <span className="text-sm text-[#484848] leading-relaxed">
+        <span className="text-sm text-[#F0F0F0] leading-relaxed">
           J'ai lu et j'accepte les conditions générales du programme Gentleman Létal Club.
         </span>
       </label>
 
       {/* Signature name input */}
       <div className="space-y-2">
-        <label className="block text-xs text-[#484848] uppercase tracking-widest">
+        <label className="block text-sm font-medium text-[#888888] uppercase tracking-wider mb-2">
           Signature — tape ton prénom et nom complet
         </label>
         <input
@@ -480,8 +482,7 @@ function Step1Contract({
           value={signatureName}
           onChange={e => onSignatureNameChange(e.target.value)}
           placeholder="Prénom Nom"
-          className="w-full bg-[#0F0F0F] border border-[#1E1E1E] rounded-lg px-4 py-3 text-[#F2F2F5] placeholder-[#484848] focus:outline-none focus:border-[#8B1A1A] transition-colors"
-          style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: '15px' }}
+          className="w-full bg-[#0F0F0F] border border-[#1E1E1E] rounded-xl px-4 py-3 text-base text-[#F5F5F5] placeholder-[#444444] focus:outline-none focus:border-[#8B1A1A] focus:shadow-[0_0_0_3px_rgba(139,26,26,0.12)] transition-all"
         />
       </div>
 
@@ -761,18 +762,20 @@ function Step5Call({
   onBook: () => void
 }) {
   if (done) return (
-    <div className="space-y-6 text-center">
-      <div className="text-6xl">🎉</div>
-      <h2 className="text-2xl font-black text-[#F5F5F5]">Onboarding terminé.</h2>
-      <p className="text-[#484848]">Ton premier call est réservé. Robin te contactera prochainement.</p>
-      <p className="text-sm text-[#8B1A1A]">Redirection vers ton dashboard…</p>
+    <div className="space-y-6 text-center py-4">
+      <div className="w-14 h-px bg-[#8B1A1A] mx-auto" />
+      <h2
+        className="text-4xl sm:text-5xl font-black uppercase text-[#F0F0F0]"
+        style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800 }}
+      >Mission accomplie</h2>
+      <p className="text-sm text-[#888888] leading-relaxed">Ton premier call est réservé. Robin te contactera prochainement.</p>
     </div>
   )
 
   return (
     <div className="space-y-6">
       <StepHeader
-        number="🔒"
+        number={unlocked ? "📞" : "🔒"}
         title="Réserve ton premier call"
         subtitle={unlocked
           ? "Toutes tes étapes sont complétées. Tu peux maintenant réserver ton premier call avec Robin."
@@ -782,7 +785,6 @@ function Step5Call({
 
       {!unlocked ? (
         <div className="rounded-xl border border-[#1E1E1E] bg-[#0F0F0F] p-8 text-center space-y-4">
-          <div className="text-4xl">🔒</div>
           <p className="text-[#484848] text-sm">Complete les étapes 1 à 4 pour débloquer la réservation.</p>
           <div className="space-y-2 text-left mt-4">
             {['Contrat signé', 'Questionnaire rempli', 'WhatsApp rejoint', 'Skool rejoint'].map((l, i) => (
@@ -794,7 +796,6 @@ function Step5Call({
         </div>
       ) : (
         <div className="rounded-xl border border-[#8B1A1A]/30 bg-[#8B1A1A]/5 p-6 text-center space-y-4">
-          <div className="text-5xl">📞</div>
           <p className="text-[#F5F5F5] text-sm font-medium">Tu y es. Robin t'attend.</p>
           <p className="text-[#484848] text-sm leading-relaxed">
             Choisis le créneau qui te convient. Ce call de démarrage est le point de lancement de ta transformation.
@@ -814,11 +815,16 @@ function StepHeader({ number, title, subtitle }: { number: string; title: string
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-3">
-        <span className="text-[#8B1A1A] text-sm font-black tracking-widest uppercase">{number}</span>
+        <span className="text-[#8B1A1A] text-xs font-black tracking-widest uppercase"
+          style={{ fontFamily: "'Barlow Condensed', sans-serif", letterSpacing: '0.1em' }}
+        >{number}</span>
         <div className="h-px flex-1 bg-[#1E1E1E]" />
       </div>
-      <h1 className="text-2xl sm:text-3xl font-black text-[#F5F5F5] leading-tight">{title}</h1>
-      <p className="text-base text-[#484848] leading-relaxed">{subtitle}</p>
+      <h1
+        className="text-4xl sm:text-5xl font-black text-[#F0F0F0] leading-none uppercase"
+        style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800 }}
+      >{title}</h1>
+      <p className="text-sm text-[#888888] leading-relaxed">{subtitle}</p>
     </div>
   )
 }
@@ -841,11 +847,13 @@ function StepDone({ label, onContinue }: { label: string; onContinue: () => void
   )
 }
 
-function QSectionTitle({ icon, title }: { icon: string; title: string }) {
+function QSectionTitle({ title }: { icon?: string; title: string }) {
   return (
-    <div className="flex items-center gap-2 pb-1 border-b border-[#1E1E1E]">
-      <span>{icon}</span>
-      <span className="text-base font-black uppercase tracking-widest text-[#888888]">{title}</span>
+    <div className="pb-1 border-b border-[#1E1E1E]">
+      <span
+        className="text-sm font-black uppercase text-[#888888]"
+        style={{ fontFamily: "'Barlow Condensed', sans-serif", letterSpacing: '0.08em' }}
+      >{title}</span>
     </div>
   )
 }
@@ -944,6 +952,46 @@ function LoadingScreen() {
         <GlcLogo size="md" />
         <div className="text-[#484848] text-xs animate-pulse">Chargement…</div>
       </div>
+    </div>
+  )
+}
+
+function RedirectScreen({ onDone }: { onDone: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(onDone, 2000)
+    return () => clearTimeout(t)
+  }, [onDone])
+
+  return (
+    <div
+      className="fixed inset-0 z-[9999] bg-[#060606] flex flex-col items-center justify-center gap-6"
+    >
+      <style>{`
+        @keyframes fillBar {
+          from { width: 0% }
+          to   { width: 100% }
+        }
+      `}</style>
+
+      <GlcLogo size="xl" />
+
+      <div
+        className="rounded-sm overflow-hidden"
+        style={{ width: '260px', height: '2px', background: '#1E1E1E' }}
+      >
+        <div
+          style={{
+            height: '100%',
+            background: '#8B1A1A',
+            animation: 'fillBar 1.8s linear forwards',
+          }}
+        />
+      </div>
+
+      <span
+        className="text-[#484848] uppercase tracking-[0.12em]"
+        style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: '11px' }}
+      >Accès au dashboard</span>
     </div>
   )
 }
