@@ -314,6 +314,7 @@ export default function AdminPage() {
                       <th className="text-right px-5 py-3 text-[10px] font-black uppercase tracking-[0.18em] text-[#484848]">XP</th>
                       <th className="text-left px-5 py-3 text-[10px] font-black uppercase tracking-[0.18em] text-[#484848]">Niveau</th>
                       <th className="text-center px-5 py-3 text-[10px] font-black uppercase tracking-[0.18em] text-[#484848]">Onboarding</th>
+                      <th className="px-5 py-3" />
                     </tr>
                   </thead>
                   <tbody>
@@ -343,6 +344,14 @@ export default function AdminPage() {
                           ) : (
                             <span className="inline-block w-2 h-2 rounded-full bg-[#484848]" title="En cours" />
                           )}
+                        </td>
+                        <td className="px-5 py-3 text-right">
+                          <a
+                            href={`/admin/client/${c.id}`}
+                            className="text-xs text-[#484848] hover:text-[#F5F5F5] transition-colors"
+                          >
+                            Voir fiche →
+                          </a>
                         </td>
                       </tr>
                     ))}
