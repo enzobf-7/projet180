@@ -213,8 +213,6 @@ export default function OnboardingPage() {
         .from('onboarding_progress')
         .update({ completed_at: new Date().toISOString() })
         .eq('user_id', userId)
-      // Notify coach — fire and forget
-      fetch('/api/onboarding/notify-coach', { method: 'POST' }).catch(() => {})
     }
     setTimeout(() => router.push('/dashboard'), 800)
   }
