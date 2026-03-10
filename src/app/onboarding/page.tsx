@@ -204,24 +204,24 @@ export default function OnboardingPage() {
     <div className="min-h-screen bg-[#060606] text-[#F5F5F5]" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
       {/* Header */}
       <header className="sticky top-0 z-50 bg-[#060606]/95 backdrop-blur-sm border-b border-[#1E1E1E]">
-        <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 py-3 sm:py-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <GlcLogo size="sm" />
             <span className="text-[#1E1E1E]">|</span>
-            <span className="text-[#F2F2F5] text-sm font-black uppercase tracking-widest">Onboarding</span>
+            <span className="text-[#F2F2F5] text-base font-black uppercase tracking-widest">Onboarding</span>
           </div>
-          <span className="text-[#484848] text-xs">{currentStep}/5</span>
+          <span className="text-[#484848] text-sm">{currentStep}/5</span>
         </div>
       </header>
 
       {/* Progress Bar */}
       <div className="bg-[#0F0F0F] border-b border-[#1E1E1E]">
-        <div className="max-w-lg mx-auto px-4 py-3">
-          <div className="flex gap-1.5">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
+          <div className="flex gap-2">
             {([1,2,3,4,5] as Step[]).map(s => (
               <div
                 key={s}
-                className="h-1 flex-1 rounded-full transition-all duration-500"
+                className="h-2 flex-1 rounded-full transition-all duration-500"
                 style={{
                   backgroundColor: 
                     (s === 1 && progress.step1_contract) ||
@@ -241,7 +241,7 @@ export default function OnboardingPage() {
       </div>
 
       {/* Step Nav (read-only status) */}
-      <div className="max-w-lg mx-auto px-4 py-6">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-5 sm:py-8">
         <StepNav
           currentStep={currentStep}
           progress={progress}
@@ -255,7 +255,7 @@ export default function OnboardingPage() {
       </div>
 
       {/* Step Content */}
-      <div className="max-w-lg mx-auto px-4 pb-16">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 pb-20 sm:pb-24">
         {currentStep === 1 && (
           <Step1Contract
             pdfUrl={settings.contract_pdf_url}
@@ -346,7 +346,7 @@ function StepNav({
             key={s.n}
             onClick={() => !isLocked && onStepClick(s.n)}
             className={`
-              flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium whitespace-nowrap transition-all
+              flex items-center gap-2 px-4 py-3 rounded-lg border text-sm font-medium whitespace-nowrap transition-all
               ${isActive 
                 ? 'border-[#8B1A1A] bg-[#8B1A1A]/10 text-[#F5F5F5]' 
                 : s.done 
@@ -387,7 +387,7 @@ function Step1Contract({
   if (done) return <StepDone label="Contrat signé" onContinue={() => {}} />
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <StepHeader
         number="01"
         title="Signe ton contrat"
@@ -404,10 +404,10 @@ function Step1Contract({
             title="Contrat GLC"
           />
         ) : (
-          <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-            <span className="text-4xl mb-4">📄</span>
-            <p className="text-[#484848] text-sm">Le contrat n'a pas encore été uploadé par Robin.</p>
-            <p className="text-[#484848] text-xs mt-2">Il sera disponible très prochainement.</p>
+          <div className="flex flex-col items-center justify-center py-24 px-4 text-center">
+            <span className="text-7xl mb-6">📄</span>
+            <p className="text-[#484848] text-base">Le contrat n'a pas encore été uploadé par Robin.</p>
+            <p className="text-[#484848] text-sm mt-2">Il sera disponible très prochainement.</p>
           </div>
         )}
       </div>
@@ -680,7 +680,7 @@ function Step3Link({
       />
 
       <div className="rounded-xl border border-[#1E1E1E] bg-[#0F0F0F] p-6 text-center space-y-4">
-        <div className="text-5xl">{icon}</div>
+        <div className="text-7xl">{icon}</div>
         <p className="text-[#484848] text-sm leading-relaxed">{details ?? description}</p>
         <GlcButton onClick={onConfirm} fullWidth>
           {hasLink ? `${cta} →` : 'Passer cette étape →'}
@@ -757,13 +757,13 @@ function Step5Call({
 
 function StepHeader({ number, title, subtitle }: { number: string; title: string; subtitle: string }) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       <div className="flex items-center gap-3">
-        <span className="text-[#8B1A1A] text-xs font-black tracking-widest uppercase">{number}</span>
+        <span className="text-[#8B1A1A] text-sm font-black tracking-widest uppercase">{number}</span>
         <div className="h-px flex-1 bg-[#1E1E1E]" />
       </div>
-      <h1 className="text-xl font-black text-[#F5F5F5] leading-tight">{title}</h1>
-      <p className="text-sm text-[#484848] leading-relaxed">{subtitle}</p>
+      <h1 className="text-2xl sm:text-3xl font-black text-[#F5F5F5] leading-tight">{title}</h1>
+      <p className="text-base text-[#484848] leading-relaxed">{subtitle}</p>
     </div>
   )
 }
@@ -785,7 +785,7 @@ function QSectionTitle({ icon, title }: { icon: string; title: string }) {
   return (
     <div className="flex items-center gap-2 pb-1 border-b border-[#1E1E1E]">
       <span>{icon}</span>
-      <span className="text-sm font-black uppercase tracking-widest text-[#888888]">{title}</span>
+      <span className="text-base font-black uppercase tracking-widest text-[#888888]">{title}</span>
     </div>
   )
 }
@@ -798,13 +798,13 @@ function QInput({
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="block text-xs font-medium text-[#888888] uppercase tracking-wider">{label}</label>
+      <label className="block text-sm font-medium text-[#888888] uppercase tracking-wider">{label}</label>
       <input
         type={type}
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full bg-[#0F0F0F] border border-[#1E1E1E] rounded-xl px-4 py-3 text-sm text-[#F5F5F5] placeholder-[#444444] focus:outline-none focus:border-[#8B1A1A] focus:shadow-[0_0_0_3px_rgba(139,26,26,0.12)] transition-all"
+        className="w-full bg-[#0F0F0F] border border-[#1E1E1E] rounded-xl px-4 py-3 text-base text-[#F5F5F5] placeholder-[#444444] focus:outline-none focus:border-[#8B1A1A] focus:shadow-[0_0_0_3px_rgba(139,26,26,0.12)] transition-all"
       />
     </div>
   )
@@ -818,13 +818,13 @@ function QTextarea({
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="block text-xs font-medium text-[#888888] uppercase tracking-wider">{label}</label>
+      <label className="block text-sm font-medium text-[#888888] uppercase tracking-wider">{label}</label>
       <textarea
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
         rows={rows}
-        className="w-full bg-[#0F0F0F] border border-[#1E1E1E] rounded-xl px-4 py-3 text-sm text-[#F5F5F5] placeholder-[#444444] focus:outline-none focus:border-[#8B1A1A] focus:shadow-[0_0_0_3px_rgba(139,26,26,0.12)] transition-all resize-none"
+        className="w-full bg-[#0F0F0F] border border-[#1E1E1E] rounded-xl px-4 py-3 text-base text-[#F5F5F5] placeholder-[#444444] focus:outline-none focus:border-[#8B1A1A] focus:shadow-[0_0_0_3px_rgba(139,26,26,0.12)] transition-all resize-none"
       />
     </div>
   )
@@ -837,11 +837,11 @@ function QSelect({
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="block text-xs font-medium text-[#888888] uppercase tracking-wider">{label}</label>
+      <label className="block text-sm font-medium text-[#888888] uppercase tracking-wider">{label}</label>
       <select
         value={value}
         onChange={e => onChange(e.target.value)}
-        className="w-full bg-[#0F0F0F] border border-[#1E1E1E] rounded-xl px-4 py-3 text-sm text-[#F5F5F5] focus:outline-none focus:border-[#8B1A1A] focus:shadow-[0_0_0_3px_rgba(139,26,26,0.12)] transition-all appearance-none"
+        className="w-full bg-[#0F0F0F] border border-[#1E1E1E] rounded-xl px-4 py-3 text-base text-[#F5F5F5] focus:outline-none focus:border-[#8B1A1A] focus:shadow-[0_0_0_3px_rgba(139,26,26,0.12)] transition-all appearance-none"
       >
         <option value="">Choisir…</option>
         {options.map(o => <option key={o} value={o}>{o}</option>)}
@@ -858,7 +858,7 @@ function QSlider({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <label className="text-xs font-medium text-[#888888] uppercase tracking-wider">{label}</label>
+        <label className="text-sm font-medium text-[#888888] uppercase tracking-wider">{label}</label>
         <span className="text-lg font-black text-[#8B1A1A]">{value}/10</span>
       </div>
       <input
