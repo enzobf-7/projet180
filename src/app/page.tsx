@@ -91,9 +91,6 @@ export default function LoginPage() {
           </form>
         </div>
 
-        <p className="text-center text-glc-muted/40 text-xs mt-8 tracking-wide">
-          Gentleman Létal Club · 180 jours
-        </p>
       </div>
     </div>
   )

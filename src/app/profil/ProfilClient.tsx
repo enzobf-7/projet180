@@ -156,7 +156,6 @@ export default function ProfilClient({ jourX, email, responses, gamification, on
   const navItems = [
     { label: 'Dashboard',  href: '/dashboard',  active: false },
     { label: 'Programme',  href: '/programme',  active: false },
-    { label: 'Messagerie', href: '/messagerie', active: false },
     { label: 'Profil',     href: '/profil',     active: true  },
   ]
 
