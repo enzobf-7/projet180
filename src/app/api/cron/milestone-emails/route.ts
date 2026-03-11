@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
           'content-type': 'application/json',
         },
         body: JSON.stringify({
-          sender: { name: 'Robin — Gentleman Létal Club', email: 'noreply@glc-app.com' },
+          sender: { name: 'Robin — Gentleman Létal Club', email: 'noreply@gentlemanletal.club' },
           to: [{ email: profile.email, name: firstName }],
           subject: msg.subject,
           htmlContent: `

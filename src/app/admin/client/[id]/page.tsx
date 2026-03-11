@@ -117,7 +117,7 @@ export default async function ClientFiche({
       admin.from('questionnaire_responses').select('responses, submitted_at').eq('client_id', id).single(),
       admin.from('gamification').select('xp_total, current_streak, longest_streak').eq('client_id', id).single(),
       admin.from('habits').select('id, name, is_active').eq('client_id', id).order('sort_order'),
-      admin.from('weekly_reports').select('id, week_number, motivation_score, submitted_at').eq('client_id', id).order('week_number', { ascending: false }),
+      admin.from('weekly_reports').select('id, week_number, motivation_score, submitted_at, responses').eq('client_id', id).order('week_number', { ascending: false }),
       admin.from('onboarding_progress').select('completed_at').eq('user_id', id).single(), // ← user_id, pas client_id
     ])
 
@@ -340,6 +340,11 @@ export default async function ClientFiche({
                   <div style={{ padding: '1rem 1.25rem', borderTop: `1px solid ${S.border}`, fontSize: '0.8rem', color: S.muted }}>
                     Rapport généré le {r.submitted_at ? fmtDate(r.submitted_at) : '—'}
                     {r.motivation_score !== null && ` · Motivation : ${r.motivation_score}/10`}.
+                    {(r as any).responses?.ai_summary && (
+                      <p style={{ marginTop: '0.75rem', color: '#C0C0C0', fontSize: '0.825rem', lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>
+                        {String((r as any).responses.ai_summary)}
+                      </p>
+                    )}
                   </div>
                 </details>
               ))}

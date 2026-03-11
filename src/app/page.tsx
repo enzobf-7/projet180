@@ -47,7 +47,7 @@ export default function LoginPage() {
             Gentleman Létal Club
           </h1>
           <p style={{ fontSize: '0.8rem', color: '#888', letterSpacing: '0.03em' }}>
-            Connecte-toi pour accéder à ton espace
+            180 jours pour changer ta vie
           </p>
         </div>
 

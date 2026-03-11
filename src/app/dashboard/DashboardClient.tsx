@@ -241,7 +241,6 @@ export default function DashboardClient({
   const navItems = [
     { label: 'Dashboard',  href: '/dashboard',  active: true  },
     { label: 'Programme',  href: '/programme',  active: false },
-    { label: 'Messagerie', href: '/messagerie', active: false },
     { label: 'Profil',     href: '/profil',     active: false },
   ]
 
@@ -581,6 +580,41 @@ export default function DashboardClient({
         <div style={{ padding: isMobile ? '24px 16px 64px' : '36px 40px 80px' }}>
 
 
+          {/* ── Stats strip ─────────────────────────────────────────────────── */}
+          <div className="glc-fade" style={{
+            display: 'grid',
+            gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)',
+            background: C.surface,
+            border: `1px solid ${C.border}`,
+            overflow: 'hidden',
+            marginBottom: 32,
+            animationDelay: '0.2s',
+          }}>
+            {[
+              { label: 'XP Total',   value: localXP,   color: C.accent, mono: true },
+              { label: 'XP Semaine', value: weeklyXP,  color: C.text,   mono: true },
+              { label: `Série ${hotStreak ? '🔥' : ''}`, value: streak, color: C.text, mono: true },
+              { label: 'Classement', value: myRank ?? '—', color: myRank && myRank <= 3 ? C.accent : C.text, mono: false },
+            ].map((stat, i, arr) => (
+              <div key={stat.label} style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                padding: isMobile ? '18px 8px' : '22px 12px',
+                borderRight: i < arr.length - 1 ? `1px solid ${C.border}` : 'none',
+                borderBottom: isMobile && i < 2 ? `1px solid ${C.border}` : 'none',
+              }}>
+                <span style={{ ...D, fontWeight: 900, fontSize: isMobile ? '28px' : '32px', color: stat.color, lineHeight: 1 }}>
+                  {stat.mono
+                    ? (typeof stat.value === 'number' ? <AnimatedCounter to={stat.value} /> : stat.value)
+                    : (typeof stat.value === 'number' ? `#${stat.value}` : stat.value)
+                  }
+                </span>
+                <span style={{ ...D, fontWeight: 700, fontSize: '9px', letterSpacing: '0.2em', color: C.muted, textTransform: 'uppercase' as const, marginTop: 5 }}>
+                  {stat.label}
+                </span>
+              </div>
+            ))}
+          </div>
+
           {/* Two-column grid */}
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 320px', gap: 24, alignItems: 'start', marginBottom: 32 }}>
 
@@ -589,6 +623,11 @@ export default function DashboardClient({
               <div style={{ ...D, fontWeight: 700, fontSize: '9px', letterSpacing: '0.3em', color: C.accent, textTransform: 'uppercase' as const, marginBottom: 8 }}>
                 Check-in quotidien
               </div>
+              {gamification.current_streak > 0 && completed.size === 0 && new Date().getHours() >= 18 && (
+                <div style={{ background: '#1A0A0A', border: '1px solid #8B1A1A', borderRadius: 8, padding: '10px 14px', marginBottom: 12, color: '#E05050', fontSize: 13 }}>
+                  ⚠️ Ta série de {gamification.current_streak}j est en danger — coche tes habitudes avant minuit.
+                </div>
+              )}
               <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
                 <h2 style={{ ...D, fontWeight: 900, fontSize: '20px', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: C.text, margin: 0, flex: 1 }}>
                   Missions du jour
@@ -795,7 +834,7 @@ export default function DashboardClient({
                       background: badge.earned ? `${C.accent}18` : C.bg,
                       border: `1px solid ${badge.earned ? C.accent + '40' : C.border}`,
                       borderRadius: 6,
-                      opacity: badge.earned ? 1 : 0.3,
+                      opacity: badge.earned ? 1 : 0.45,
                       transition: 'opacity 0.3s',
                       cursor: 'default',
                     }}>
@@ -805,6 +844,11 @@ export default function DashboardClient({
                       <span style={{ ...M, fontSize: '7px', color: badge.earned ? C.text : C.muted, textAlign: 'center', lineHeight: 1.3, letterSpacing: '0.04em' }}>
                         {badge.label}
                       </span>
+                      {!badge.earned && (
+                        <p style={{ ...M, fontSize: '6px', color: C.muted, textAlign: 'center', margin: 0, marginTop: 2, lineHeight: 1.3, letterSpacing: '0.02em' }}>
+                          {badge.desc}
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -869,40 +913,6 @@ export default function DashboardClient({
                 </div>
               )}
             </div>
-          </div>
-
-          {/* ── Stats strip ─────────────────────────────────────────────────── */}
-          <div className="glc-fade" style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
-            background: C.surface,
-            border: `1px solid ${C.border}`,
-            overflow: 'hidden',
-            marginBottom: 40,
-            animationDelay: '0.35s',
-          }}>
-            {[
-              { label: 'XP Total',   value: localXP,   color: C.accent, mono: true },
-              { label: 'XP Semaine', value: weeklyXP,  color: C.text,   mono: true },
-              { label: `Série ${hotStreak ? '🔥' : ''}`, value: streak, color: C.text, mono: true },
-              { label: 'Classement', value: myRank ?? '—', color: myRank && myRank <= 3 ? C.accent : C.text, mono: false },
-            ].map((stat, i, arr) => (
-              <div key={stat.label} style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                padding: isMobile ? '18px 8px' : '22px 12px',
-                borderRight: i < arr.length - 1 ? `1px solid ${C.border}` : 'none',
-              }}>
-                <span style={{ ...D, fontWeight: 900, fontSize: isMobile ? '28px' : '32px', color: stat.color, lineHeight: 1 }}>
-                  {stat.mono
-                    ? (typeof stat.value === 'number' ? <AnimatedCounter to={stat.value} /> : stat.value)
-                    : (typeof stat.value === 'number' ? `#${stat.value}` : stat.value)
-                  }
-                </span>
-                <span style={{ ...D, fontWeight: 700, fontSize: '9px', letterSpacing: '0.2em', color: C.muted, textTransform: 'uppercase' as const, marginTop: 5 }}>
-                  {stat.label}
-                </span>
-              </div>
-            ))}
           </div>
 
           {/* ── Leaderboard ─────────────────────────────────────────────────── */}
@@ -1010,7 +1020,7 @@ export default function DashboardClient({
 
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', position: 'relative' }}>
                         <span style={{ ...M, fontSize: '12px', fontWeight: 700, color: entry.streak > 0 ? C.text : C.dimmed }}>
-                          {entry.streak > 0 ? `${entry.streak}d` : '—'}
+                          {entry.streak > 0 ? `🔥 ${entry.streak}j` : '—'}
                         </span>
                       </div>
 
@@ -1050,7 +1060,6 @@ export default function DashboardClient({
                 color: item.active ? C.accent : C.muted, textDecoration: 'none' }}>
                 {item.href === '/dashboard'  && <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>}
                 {item.href === '/programme'  && <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>}
-                {item.href === '/messagerie' && <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>}
                 {item.href === '/profil'     && <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>}
                 <span style={{ ...D, fontWeight: 700, fontSize: '11px', letterSpacing: '0.12em', textTransform: 'uppercase' as const }}>{item.label}</span>
               </a>

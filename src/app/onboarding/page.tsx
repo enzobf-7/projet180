@@ -60,9 +60,9 @@ export default function OnboardingPage() {
     step5_call: false,
   })
   const [settings, setSettings] = useState<AppSettings>({
-    whatsapp_link: '#',
-    skool_link: '#',
-    iclosed_link: '#',
+    whatsapp_link: 'https://chat.whatsapp.com/BqQlrH78LvlH5a7jEdepSG?mode=gi_t',
+    skool_link: 'https://www.skool.com/gentlemanletalclub',
+    iclosed_link: 'https://app.iclosed.io/e/gentlemanletal/onboarding-glc',
     contract_pdf_url: '',
   })
   const [userId, setUserId] = useState<string | null>(null)

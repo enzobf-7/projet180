@@ -99,11 +99,11 @@ async function sendWelcomeEmail(email: string, firstName: string, password: stri
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        sender: { name: 'Robin — Gentleman Létal Club', email: 'noreply@glc-app.com' },
+        sender: { name: 'Robin — Gentleman Létal Club', email: 'noreply@gentlemanletal.club' },
         to: [{ email, name: firstName }],
         subject: 'Bienvenue dans le Gentleman Létal Club',
         htmlContent: `
-          <div style="font-family: -apple-system, sans-serif; max-width: 500px; margin: 0 auto; color: #F5F5F5; background: #0A0A0A; padding: 40px 30px; border-radius: 16px;">
+          <div style="font-family: -apple-system, sans-serif; max-width: 500px; margin: 0 auto; color: #F5F5F5; background: #060606; padding: 40px 30px; border-radius: 16px;">
             <h1 style="font-size: 24px; margin-bottom: 20px;">Bienvenue ${firstName}.</h1>
             <p style="color: #888; line-height: 1.7;">
               Tu viens de rejoindre le Gentleman Létal Club. La transformation commence maintenant.
@@ -112,7 +112,7 @@ async function sendWelcomeEmail(email: string, firstName: string, password: stri
               Connecte-toi et complète tes étapes de pré-onboarding. 
               Une fois terminé, le lien pour réserver ton premier call avec moi se débloque.
             </p>
-            <div style="background: #141414; border: 1px solid #2A2A2A; border-radius: 12px; padding: 20px; margin: 24px 0;">
+            <div style="background: #0F0F0F; border: 1px solid #1E1E1E; border-radius: 12px; padding: 20px; margin: 24px 0;">
               <p style="margin: 0 0 8px; color: #888; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Tes accès</p>
               <p style="margin: 4px 0; color: #F5F5F5;"><strong>Email :</strong> ${email}</p>
               <p style="margin: 4px 0; color: #F5F5F5;"><strong>Mot de passe :</strong> ${password}</p>
