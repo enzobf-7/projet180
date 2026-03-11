@@ -610,7 +610,7 @@ export default function DashboardClient({
           </div>
 
           {/* Two-column grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 320px', gap: 24, alignItems: 'start', marginBottom: 32 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 400px', gap: 24, alignItems: 'start', marginBottom: 32 }}>
 
             {/* ── Missions ──────────────────────────────────────────────── */}
             <div style={{ minWidth: 0 }}>

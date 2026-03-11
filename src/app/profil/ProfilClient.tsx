@@ -11,7 +11,7 @@ const C = {
   surface: '#0F0F0F',
   sidebar: '#060606',
   border:  '#1E1E1E',
-  muted:   '#888888',
+  muted:   '#484848',
   dimmed:  '#1E1E1E',
   text:    '#F2F2F5',
   accent:  '#8B1A1A',
@@ -276,7 +276,7 @@ export default function ProfilClient({ jourX, email, responses, gamification, on
         </header>
 
         {/* Content */}
-        <div style={{ padding: '40px', maxWidth: 900, width: '100%' }}>
+        <div style={{ padding: '40px', width: '100%' }}>
 
           {/* ── Hero card ─────────────────────────────────────────────────── */}
           <div style={{

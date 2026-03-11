@@ -288,7 +288,7 @@ export default function ProgrammeClient({
         <div style={{
           background: `linear-gradient(160deg, #0F0F0F 0%, ${C.bg} 100%)`,
           borderBottom: `1px solid ${C.border}`,
-          padding: '52px 40px 44px',
+          padding: '36px 40px 28px',
         }}>
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 32, flexWrap: 'wrap' }}>
 
@@ -299,7 +299,7 @@ export default function ProgrammeClient({
               </div>
               <h1 style={{
                 ...D, fontWeight: 900,
-                fontSize: 'clamp(56px, 7.5vw, 104px)',
+                fontSize: 'clamp(32px, 4.5vw, 52px)',
                 lineHeight: 0.88, letterSpacing: '0.02em',
                 textTransform: 'uppercase' as const,
                 color: C.text, margin: '0 0 20px',
@@ -338,7 +338,7 @@ export default function ProgrammeClient({
 
             {/* Right: week counter */}
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexShrink: 0 }}>
-              <span style={{ ...M, fontWeight: 700, fontSize: '88px', lineHeight: 1, color: C.text, letterSpacing: '-0.04em' }}>
+              <span style={{ ...M, fontWeight: 700, fontSize: '52px', lineHeight: 1, color: C.text, letterSpacing: '-0.04em' }}>
                 {String(currentWeek).padStart(2, '0')}
               </span>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -350,11 +350,11 @@ export default function ProgrammeClient({
         </div>
 
         {/* ── Quote strip ───────────────────────────────────────────────────── */}
-        <div style={{ background: C.accent, padding: '13px 40px', overflow: 'hidden' }}>
+        <div style={{ background: '#0A0404', borderTop: `1px solid ${C.accent}40`, borderBottom: `1px solid ${C.accent}20`, padding: '10px 40px', overflow: 'hidden' }}>
           <span style={{
-            ...D, fontWeight: 900, fontSize: '12px',
-            letterSpacing: '0.32em', textTransform: 'uppercase' as const,
-            color: 'rgba(255,255,255,0.88)', whiteSpace: 'nowrap',
+            ...D, fontWeight: 700, fontSize: '11px',
+            letterSpacing: '0.28em', textTransform: 'uppercase' as const,
+            color: `${C.accent}CC`, whiteSpace: 'nowrap',
           }}>
             LE CONFORT EST L&apos;ENNEMI DU PROGRÈS &nbsp;·&nbsp; DISCIPLINE &nbsp;·&nbsp; EXCELLENCE &nbsp;·&nbsp; IDENTITÉ
           </span>
@@ -441,17 +441,17 @@ export default function ProgrammeClient({
                         minWidth:    0,
                       }}
                     >
-                      <div style={{ ...M, fontSize: '8px', color: isActive ? C.accent : isCurrent ? C.gold : C.muted, marginBottom: 5, letterSpacing: '0.15em' }}>
+                      <div style={{ ...M, fontSize: '10px', color: isActive ? C.accent : isCurrent ? C.gold : C.muted, marginBottom: 5, letterSpacing: '0.15em' }}>
                         PHASE {p.phase}
                       </div>
                       <div style={{ ...D, fontWeight: 900, fontSize: '12px', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: isActive ? C.text : isPast ? C.muted : C.muted, marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {p.label}
                       </div>
-                      <div style={{ ...M, fontSize: '8px', color: C.muted }}>
+                      <div style={{ ...M, fontSize: '10px', color: C.muted }}>
                         {p.days}j
                       </div>
                       {assigned > 0 && (
-                        <div style={{ ...M, fontSize: '8px', color: isActive ? C.accent : C.muted, marginTop: 4 }}>
+                        <div style={{ ...M, fontSize: '10px', color: isActive ? C.accent : C.muted, marginTop: 4 }}>
                           {assigned}/{p.weeks.length} sem.
                         </div>
                       )}
@@ -473,7 +473,7 @@ export default function ProgrammeClient({
                   { label: 'Durée',     val: formatDuration(totalDuration),                               mono: true  },
                 ].map((stat, i) => (
                   <div key={i} style={{ padding: '16px 20px', borderRight: i < 3 ? `1px solid ${C.border}` : 'none' }}>
-                    <div style={{ ...D, fontWeight: 700, fontSize: '9px', letterSpacing: '0.25em', color: C.muted, textTransform: 'uppercase' as const, marginBottom: 6 }}>
+                    <div style={{ ...D, fontWeight: 700, fontSize: '11px', letterSpacing: '0.25em', color: C.muted, textTransform: 'uppercase' as const, marginBottom: 6 }}>
                       {stat.label}
                     </div>
                     <div style={{
