@@ -39,13 +39,8 @@ export default function LoginPage() {
 
       <div className="w-full max-w-[360px] relative z-10 animate-fade-in">
         {/* Logo + heading */}
-        <div className="text-center mb-10">
-          <div className="flex justify-center mb-3">
-            <P180Logo size="xl" />
-          </div>
-          <p style={{ fontSize: '0.8rem', color: '#888', letterSpacing: '0.03em' }}>
-            Ta nouvelle vie commence maintenant
-          </p>
+        <div className="flex justify-center mb-10">
+          <P180Logo size="2xl" />
         </div>
 
         {/* Form card */}
