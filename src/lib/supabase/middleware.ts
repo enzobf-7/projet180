@@ -65,7 +65,7 @@ export async function updateSession(request: NextRequest) {
       const { data: onboarding } = await admin
         .from('onboarding_progress')
         .select('completed_at')
-        .eq('client_id', user.id)
+        .eq('user_id', user.id)
         .single()
 
       url.pathname = onboarding?.completed_at ? '/dashboard' : '/onboarding'

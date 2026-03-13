@@ -9,7 +9,25 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'clientId required' }, { status: 400 })
   }
 
+  // Verify caller is admin
+  const { createClient } = await import('@/lib/supabase/server')
+  const authClient = await createClient()
+  const { data: { user } } = await authClient.auth.getUser()
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
   const supabase = createAdminClient()
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (profile?.role !== 'admin') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
   const { data, error } = await supabase
     .from('todos')
     .select('id, client_id, title, is_system, completed_date, created_at')
