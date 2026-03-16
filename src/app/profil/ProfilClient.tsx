@@ -120,6 +120,13 @@ export default function ProfilClient({ jourX, email, responses, gamification, on
   const [activeSection, setActiveSection] = useState(0)
   const [signOutLoading, setSignOutLoading] = useState(false)
 
+  // Password change state
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [pwLoading, setPwLoading] = useState(false)
+  const [pwError, setPwError] = useState('')
+  const [pwSuccess, setPwSuccess] = useState('')
+
   const daysPct   = Math.round((jourX / 180) * 100)
   const level     = getCurrentLevel(gamification.xp_total)
   const levelPct  = getLevelProgress(gamification.xp_total)
@@ -141,6 +148,38 @@ export default function ProfilClient({ jourX, email, responses, gamification, on
     const supabase = createClient()
     await supabase.auth.signOut()
     router.push('/')
+  }
+
+  async function handlePasswordChange(e: React.FormEvent) {
+    e.preventDefault()
+    setPwError('')
+    setPwSuccess('')
+
+    if (newPassword.length < 6) {
+      setPwError('Le mot de passe doit contenir au moins 6 caractères.')
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      setPwError('Les mots de passe ne correspondent pas.')
+      return
+    }
+
+    setPwLoading(true)
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.auth.updateUser({ password: newPassword })
+      if (error) {
+        setPwError(error.message)
+      } else {
+        setPwSuccess('Mot de passe mis à jour avec succès.')
+        setNewPassword('')
+        setConfirmPassword('')
+      }
+    } catch {
+      setPwError('Une erreur est survenue.')
+    } finally {
+      setPwLoading(false)
+    }
   }
 
   const startDate = onboardingDate ? new Date(onboardingDate) : null
@@ -595,6 +634,98 @@ export default function ProfilClient({ jourX, email, responses, gamification, on
                 </div>
               )}
             </div>
+          </details>
+
+          {/* ── Changer mot de passe (accordéon) ────────────────────────── */}
+          <details style={{ background: C.surface, border: `1px solid ${C.border}`, marginTop: 32 }}>
+            <summary style={{
+              ...D, fontWeight: 700, fontSize: '13px', letterSpacing: '0.12em',
+              textTransform: 'uppercase' as const, color: C.muted,
+              padding: '16px 28px', cursor: 'pointer', userSelect: 'none' as const,
+              listStyle: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            }}>
+              Changer mon mot de passe
+              <span style={{ fontSize: '11px', letterSpacing: '0.1em' }}>▼</span>
+            </summary>
+
+            <form onSubmit={handlePasswordChange} style={{ padding: '24px 28px', borderTop: `1px solid ${C.border}` }}>
+              <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 16, maxWidth: 400 }}>
+                <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 6 }}>
+                  <label style={{ ...D, fontWeight: 700, fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase' as const, color: C.muted }}>
+                    Nouveau mot de passe
+                  </label>
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    autoComplete="new-password"
+                    style={{
+                      ...M, fontSize: '14px',
+                      padding: '10px 14px',
+                      background: C.bg,
+                      border: `1px solid ${C.border}`,
+                      color: C.text,
+                      outline: 'none',
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 6 }}>
+                  <label style={{ ...D, fontWeight: 700, fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase' as const, color: C.muted }}>
+                    Confirmer le mot de passe
+                  </label>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    autoComplete="new-password"
+                    style={{
+                      ...M, fontSize: '14px',
+                      padding: '10px 14px',
+                      background: C.bg,
+                      border: `1px solid ${C.border}`,
+                      color: C.text,
+                      outline: 'none',
+                    }}
+                  />
+                </div>
+
+                {pwError && (
+                  <div style={{ ...M, fontSize: '12px', color: '#ff6b6b', background: 'rgba(220,38,38,0.12)', border: '1px solid rgba(220,38,38,0.25)', padding: '10px 14px' }}>
+                    {pwError}
+                  </div>
+                )}
+
+                {pwSuccess && (
+                  <div style={{ ...M, fontSize: '12px', color: C.greenL, background: 'rgba(34,197,94,0.12)', border: `1px solid rgba(34,197,94,0.25)`, padding: '10px 14px' }}>
+                    {pwSuccess}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={pwLoading}
+                  style={{
+                    ...D, fontWeight: 700, fontSize: '13px', letterSpacing: '0.12em',
+                    textTransform: 'uppercase' as const,
+                    padding: '12px 24px',
+                    background: C.accent,
+                    color: 'white',
+                    border: 'none',
+                    cursor: pwLoading ? 'not-allowed' : 'pointer',
+                    opacity: pwLoading ? 0.5 : 1,
+                    transition: 'all 0.15s ease',
+                    alignSelf: 'flex-start',
+                  }}
+                >
+                  {pwLoading ? 'Mise à jour...' : 'Mettre à jour'}
+                </button>
+              </div>
+            </form>
           </details>
 
         </div>

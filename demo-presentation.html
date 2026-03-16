@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Projet180 — Présentation Technique</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #060606; color: #F0F0F0; font-family: 'Barlow Condensed', sans-serif; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* ── Hero ──────────────────────────────────────────── */
+    .hero {
+      text-align: center; padding: 80px 24px 60px;
+      background: linear-gradient(180deg, #0A0F1F 0%, #060606 100%);
+      border-bottom: 1px solid #1E1E1E;
+    }
+    .hero h1 { font-size: 48px; font-weight: 900; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 12px; }
+    .hero h1 span { color: #3A86FF; }
+    .hero p { font-size: 16px; color: #888; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; }
+
+    /* ── Section ───────────────────────────────────────── */
+    .section { max-width: 900px; margin: 0 auto; padding: 60px 32px; }
+    .section + .section { border-top: 1px solid #1E1E1E; }
+    .section-tag {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.35em; text-transform: uppercase;
+      color: #3A86FF; margin-bottom: 8px;
+    }
+    .section-title {
+      font-size: 28px; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase;
+      margin-bottom: 32px;
+    }
+    .section-desc { color: #888; font-size: 15px; font-weight: 500; line-height: 1.7; margin-bottom: 32px; max-width: 700px; }
+
+    /* ── Cards ──────────────────────────────────────────── */
+    .card {
+      background: #0B0B0B; border: 1px solid #1E1E1E; padding: 28px 32px; margin-bottom: 16px;
+    }
+    .card-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.25em; text-transform: uppercase;
+      color: #3A86FF; margin-bottom: 12px;
+    }
+    .card h3 { font-size: 18px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 8px; }
+    .card p { color: #888; font-size: 14px; font-weight: 500; line-height: 1.6; }
+
+    /* ── Flow diagram ──────────────────────────────────── */
+    .flow { display: flex; align-items: center; gap: 0; flex-wrap: wrap; margin-bottom: 32px; }
+    .flow-step {
+      background: #0B0B0B; border: 1px solid #1E1E1E; padding: 16px 20px; flex: 1; min-width: 150px;
+      text-align: center;
+    }
+    .flow-step.active { border-color: #3A86FF; background: rgba(58,134,255,0.06); }
+    .flow-step .num {
+      font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #3A86FF;
+      font-weight: 700; margin-bottom: 4px;
+    }
+    .flow-step .label { font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+    .flow-arrow { font-size: 18px; color: #333; padding: 0 4px; flex-shrink: 0; }
+
+    /* ── Email preview ─────────────────────────────────── */
+    .email-preview {
+      background: #060606; border-radius: 16px; padding: 40px 30px; max-width: 500px;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif; color: #F5F5F5; margin: 0 auto 24px;
+      border: 1px solid #1E1E1E;
+    }
+    .email-preview h2 { font-size: 22px; margin-bottom: 16px; font-weight: 600; }
+    .email-preview p { color: #888; line-height: 1.7; font-size: 14px; margin-bottom: 12px; }
+    .email-cta {
+      display: inline-block; background: #3A86FF; color: white !important; padding: 14px 32px;
+      border-radius: 12px; text-decoration: none; font-weight: 600; margin-top: 12px; font-size: 14px;
+    }
+    .email-sig { color: #484848 !important; font-size: 13px; margin-top: 28px !important; }
+    .email-creds {
+      background: #0F0F0F; border: 1px solid #1E1E1E; border-radius: 12px; padding: 20px;
+      margin: 20px 0;
+    }
+    .email-creds .lbl { color: #888; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+    .email-creds .val { color: #F5F5F5; font-size: 14px; margin: 4px 0; }
+    .email-creds .hint { color: #888; font-size: 12px; margin-top: 8px; }
+
+    /* ── Grid ───────────────────────────────────────────── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    @media (max-width: 700px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+
+    /* ── Badges / tags ─────────────────────────────────── */
+    .tag {
+      display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 0.15em;
+      text-transform: uppercase; padding: 3px 10px; border-radius: 4px;
+    }
+    .tag-blue { color: #3A86FF; border: 1px solid #3A86FF; }
+    .tag-green { color: #22C55E; border: 1px solid #22C55E; }
+    .tag-orange { color: #FFA500; border: 1px solid #FFA500; }
+    .tag-muted { color: #888; border: 1px solid #333; }
+
+    /* ── Level bar ─────────────────────────────────────── */
+    .level-bar { display: flex; gap: 2px; margin-top: 12px; }
+    .level-bar .seg {
+      flex: 1; height: 28px; display: flex; align-items: center; justify-content: center;
+      font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    }
+
+    /* ── Table ──────────────────────────────────────────── */
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      text-align: left; font-size: 10px; font-weight: 700; letter-spacing: 0.2em;
+      text-transform: uppercase; color: #888; padding: 12px 16px; border-bottom: 1px solid #1E1E1E;
+    }
+    td { padding: 12px 16px; border-bottom: 1px solid #0F0F0F; font-size: 14px; font-weight: 500; }
+    tr:nth-child(even) td { background: #0B0B0B; }
+
+    /* ── Divider ───────────────────────────────────────── */
+    .divider { height: 1px; background: #1E1E1E; margin: 40px 0; }
+
+    /* ── Stat block ────────────────────────────────────── */
+    .stat { text-align: center; padding: 20px; }
+    .stat .value { font-family: 'JetBrains Mono', monospace; font-size: 32px; font-weight: 700; line-height: 1; }
+    .stat .unit { font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #888; }
+    .stat .label { font-size: 10px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #888; margin-top: 6px; }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- HERO -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="hero">
+  <h1>Projet<span>180</span></h1>
+  <p>Présentation technique — Démo du 18 mars 2026</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- 1. FLUX STRIPE — PARCOURS CLIENT AUTOMATISÉ -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <p class="section-tag">Section 1</p>
+  <h2 class="section-title">Parcours client automatisé</h2>
+  <p class="section-desc">
+    Du paiement Stripe jusqu'au premier check-in, tout est automatique. Aucune intervention manuelle de Robin nécessaire.
+  </p>
+
+  <div class="flow">
+    <div class="flow-step">
+      <div class="num">01</div>
+      <div class="label">Paiement Stripe</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step active">
+      <div class="num">02</div>
+      <div class="label">Webhook</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="num">03</div>
+      <div class="label">Compte créé</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="num">04</div>
+      <div class="label">Email bienvenue</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="num">05</div>
+      <div class="label">Onboarding 5 étapes</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step">
+      <div class="num">06</div>
+      <div class="label">Dashboard actif</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="card-label">Détail du webhook</p>
+    <p>
+      Quand Stripe envoie <span class="mono" style="color:#3A86FF">checkout.session.completed</span>, l'app crée automatiquement :
+    </p>
+    <ul style="color:#888; font-size:14px; line-height:2; padding-left:20px; margin-top:12px;">
+      <li>Compte utilisateur Supabase Auth (email + mot de passe temporaire 12 caractères)</li>
+      <li>Profil dans <span class="mono" style="color:#F0F0F0">profiles</span> (prénom, nom, email, rôle client)</li>
+      <li>Progression onboarding (5 étapes à compléter)</li>
+      <li>Gamification initialisée (0 XP, niveau 1, streak 0)</li>
+      <li>2 todos système automatiques (quotidien + dimanche)</li>
+      <li>Email de bienvenue envoyé via Brevo avec les identifiants</li>
+    </ul>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <p class="card-label">Onboarding — 5 étapes</p>
+      <ol style="color:#888; font-size:14px; line-height:2.2; padding-left:20px;">
+        <li><strong style="color:#F0F0F0">Signature contrat</strong> — PDF + champ signature</li>
+        <li><strong style="color:#F0F0F0">Questionnaire</strong> — 40+ questions, 7 sections</li>
+        <li><strong style="color:#F0F0F0">WhatsApp</strong> — Rejoindre le groupe</li>
+        <li><strong style="color:#F0F0F0">Skool</strong> — Rejoindre la communauté</li>
+        <li><strong style="color:#F0F0F0">1er call</strong> — Réserver via iClosed <span class="tag tag-blue">Débloqué à l'étape 5</span></li>
+      </ol>
+    </div>
+    <div class="card">
+      <p class="card-label">Sécurité</p>
+      <ul style="color:#888; font-size:14px; line-height:2.2; padding-left:20px;">
+        <li>Row Level Security (RLS) sur toutes les tables</li>
+        <li>Webhook Stripe vérifié par signature cryptographique</li>
+        <li>Crons protégés par <span class="mono" style="color:#F0F0F0">CRON_SECRET</span></li>
+        <li>Rôle admin vérifié côté serveur (middleware)</li>
+        <li>Mot de passe temporaire sans caractères ambigus</li>
+        <li>Changement de mot de passe disponible dans /profil</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- 2. EMAILS AUTOMATIQUES -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <p class="section-tag">Section 2</p>
+  <h2 class="section-title">Emails automatiques</h2>
+  <p class="section-desc">
+    5 emails envoyés automatiquement via Brevo. Expéditeur : <span class="mono" style="color:#F0F0F0">Robin — Projet180 &lt;noreply@projet180.fr&gt;</span>
+  </p>
+
+  <!-- Email 1: Bienvenue -->
+  <div class="card" style="margin-bottom: 32px;">
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+      <span class="tag tag-green">Après paiement</span>
+      <span style="font-size:12px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:#888;">1 / 5 — Email de bienvenue</span>
+    </div>
+    <div class="email-preview">
+      <h2>Bienvenue Alexandre.</h2>
+      <p>Tu viens de rejoindre Projet180. La transformation commence maintenant.</p>
+      <p>Connecte-toi et complète tes étapes de pré-onboarding. Une fois terminé, le lien pour réserver ton premier call avec moi se débloque.</p>
+      <div class="email-creds">
+        <div class="lbl">Tes accès</div>
+        <div class="val"><strong>Email :</strong> alex@exemple.fr</div>
+        <div class="val"><strong>Mot de passe :</strong> Xk7mPn3qRt9v</div>
+        <div class="hint">Change ton mot de passe après ta première connexion.</div>
+      </div>
+      <a class="email-cta" href="#">Accéder à ma plateforme</a>
+      <p class="email-sig">— Robin, Projet180</p>
+    </div>
+  </div>
+
+  <!-- Email 2: Rappel habits -->
+  <div class="card" style="margin-bottom: 32px;">
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+      <span class="tag tag-orange">Quotidien</span>
+      <span style="font-size:12px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:#888;">2 / 5 — Rappel habitudes</span>
+    </div>
+    <div class="email-preview">
+      <h2>Hé Alexandre.</h2>
+      <p>Tu n'as coché aucune habitude hier. C'est une journée de perdue sur ta transformation de 180 jours.</p>
+      <p>Le succès se construit dans la régularité. Pas dans la perfection — dans la constance.</p>
+      <a class="email-cta" href="#">Reprendre aujourd'hui</a>
+      <p class="email-sig">— Robin, Projet180</p>
+    </div>
+    <p style="color:#555; font-size:12px; margin-top:16px; font-weight:500;">
+      Envoyé uniquement si aucune habitude n'a été cochée la veille. Cron quotidien à 9h UTC.
+    </p>
+  </div>
+
+  <!-- Email 3: Milestone J30 -->
+  <div class="card" style="margin-bottom: 32px;">
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+      <span class="tag tag-blue">Milestone</span>
+      <span style="font-size:12px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:#888;">3 / 5 — Jour 30 (exemple)</span>
+    </div>
+    <div class="email-preview">
+      <p style="color: #3A86FF !important; font-size: 12px !important; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px !important;">Jour 30 / 180</p>
+      <h2>Alexandre.</h2>
+      <p>Tu viens de passer 30 jours dans le programme. Un mois de travail sur toi-même, c'est déjà plus que ce que la plupart des hommes n'auront jamais fait.</p>
+      <p>Regarde où tu étais il y a un mois. La différence est là, même si tu ne la vois pas encore clairement.</p>
+      <p>Continue. La transformation se joue sur la durée.</p>
+      <a class="email-cta" href="#">Voir ma progression</a>
+      <p class="email-sig">— Robin, Projet180</p>
+    </div>
+    <p style="color:#555; font-size:12px; margin-top:16px; font-weight:500;">
+      4 milestones automatiques : J30, J60, J90, J180. Dédupliqués en base (jamais envoyés deux fois).
+    </p>
+  </div>
+
+  <!-- Email 4: Milestone J180 -->
+  <div class="card" style="margin-bottom: 32px;">
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+      <span class="tag tag-blue">Milestone</span>
+      <span style="font-size:12px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:#888;">4 / 5 — Jour 180 (fin du programme)</span>
+    </div>
+    <div class="email-preview">
+      <p style="color: #3A86FF !important; font-size: 12px !important; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px !important;">Jour 180 / 180</p>
+      <h2>Alexandre.</h2>
+      <p>C'est fait. 180 jours. Tu as terminé ce que tu as commencé.</p>
+      <p>La plupart des hommes ne finissent jamais ce qu'ils commencent. Tu viens de prouver que tu n'es pas comme la plupart des hommes.</p>
+      <p>Ce n'est pas la fin de la transformation — c'est le début de qui tu vas être pour le reste de ta vie.</p>
+      <p style="color:#F0F0F0 !important; font-weight:600;">Fier de toi.</p>
+      <a class="email-cta" href="#">Voir ma progression</a>
+      <p class="email-sig">— Robin, Projet180</p>
+    </div>
+  </div>
+
+  <!-- Email 5: Rapport IA (à venir) -->
+  <div class="card" style="border-color: #333; border-style: dashed;">
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+      <span class="tag tag-muted">Hebdomadaire — à venir</span>
+      <span style="font-size:12px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:#888;">5 / 5 — Bilan IA hebdomadaire</span>
+    </div>
+    <div class="email-preview" style="border-style: dashed; border-color: #333;">
+      <p style="color: #3A86FF !important; font-size: 12px !important; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px !important;">Bilan Semaine 7 / 26</p>
+      <h2>Ton bilan de la semaine, Alexandre.</h2>
+      <div style="display:flex; gap:16px; margin: 20px 0;">
+        <div style="flex:1; background:#0F0F0F; border:1px solid #1E1E1E; border-radius:8px; padding:12px; text-align:center;">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:700;">87%</div>
+          <div style="color:#888; font-size:11px; text-transform:uppercase; letter-spacing:1px; margin-top:4px;">Habits</div>
+        </div>
+        <div style="flex:1; background:#0F0F0F; border:1px solid #1E1E1E; border-radius:8px; padding:12px; text-align:center;">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:700;">+120</div>
+          <div style="color:#888; font-size:11px; text-transform:uppercase; letter-spacing:1px; margin-top:4px;">XP</div>
+        </div>
+        <div style="flex:1; background:#0F0F0F; border:1px solid #1E1E1E; border-radius:8px; padding:12px; text-align:center;">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:20px; font-weight:700;">14j</div>
+          <div style="color:#888; font-size:11px; text-transform:uppercase; letter-spacing:1px; margin-top:4px;">Streak</div>
+        </div>
+      </div>
+      <p style="font-style:italic;">
+        Belle semaine Alexandre. 87% de complétion sur tes habitudes, c'est solide. Ta série de 14 jours montre que la discipline s'installe. Continue sur cette lancée — le multiplicateur x2 est à portée de main.
+      </p>
+      <a class="email-cta" href="#">Voir mon profil</a>
+      <p class="email-sig">— Robin, Projet180</p>
+    </div>
+    <p style="color:#555; font-size:12px; margin-top:16px; font-weight:500;">
+      Généré chaque lundi par Claude Haiku. Actuellement visible sur /profil. L'envoi par email sera ajouté prochainement.
+    </p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- 3. AUTOMATISATIONS (CRONS) -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <p class="section-tag">Section 3</p>
+  <h2 class="section-title">Automatisations</h2>
+  <p class="section-desc">3 tâches automatiques tournent chaque jour sur Vercel, sans intervention de Robin.</p>
+
+  <div class="grid-3">
+    <div class="card">
+      <p class="card-label">Lundi 8h</p>
+      <h3>Rapport IA</h3>
+      <p>Claude Haiku analyse les stats de chaque client (habits, XP, streak) et génère un bilan personnalisé dans la voix de Robin.</p>
+      <div style="margin-top:12px;">
+        <span class="tag tag-blue">Semaines 1–26</span>
+      </div>
+    </div>
+    <div class="card">
+      <p class="card-label">Tous les jours 9h</p>
+      <h3>Rappel habits</h3>
+      <p>Si un client n'a coché aucune habitude la veille, il reçoit un email de rappel pour reprendre aujourd'hui.</p>
+      <div style="margin-top:12px;">
+        <span class="tag tag-orange">Email auto</span>
+      </div>
+    </div>
+    <div class="card">
+      <p class="card-label">Tous les jours 8h</p>
+      <h3>Milestones</h3>
+      <p>Vérifie si un client atteint J30, J60, J90 ou J180 et envoie l'email de célébration correspondant (jamais en doublon).</p>
+      <div style="margin-top:12px;">
+        <span class="tag tag-green">Dédupliqué</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- 4. GAMIFICATION -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <p class="section-tag">Section 4</p>
+  <h2 class="section-title">Système de gamification</h2>
+
+  <div class="grid-2">
+    <div class="card">
+      <p class="card-label">XP — Points d'expérience</p>
+      <table>
+        <tr><th>Action</th><th>XP</th></tr>
+        <tr><td>Cocher une habitude</td><td><span class="mono" style="color:#3A86FF">+10 XP</span> (base)</td></tr>
+        <tr><td>Série 7 jours</td><td><span class="mono" style="color:#22C55E">×1.5</span> multiplicateur</td></tr>
+        <tr><td>Série 14 jours</td><td><span class="mono" style="color:#22C55E">×2</span> multiplicateur</td></tr>
+        <tr><td>Série 30 jours</td><td><span class="mono" style="color:#FFA500">×3</span> multiplicateur</td></tr>
+        <tr><td>Journée parfaite</td><td><span class="mono" style="color:#FFA500">+50 XP</span> bonus</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <p class="card-label">Streaks — Séries consécutives</p>
+      <p>La série s'incrémente chaque jour où au moins une habitude est cochée. Elle se remet à zéro si un jour est sauté.</p>
+      <div style="margin-top:16px;">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+          <div style="width:60px; text-align:right;" class="mono" style="font-size:13px; color:#888;">0–6j</div>
+          <div style="flex:1; height:8px; background:#1E1E1E; border-radius:4px;"><div style="width:20%; height:100%; background:#484848; border-radius:4px;"></div></div>
+          <div class="mono" style="font-size:12px; color:#888;">×1</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+          <div style="width:60px; text-align:right; font-family:'JetBrains Mono',monospace; font-size:13px; color:#3A86FF;">7–13j</div>
+          <div style="flex:1; height:8px; background:#1E1E1E; border-radius:4px;"><div style="width:50%; height:100%; background:#3A86FF; border-radius:4px;"></div></div>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#3A86FF;">×1.5</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+          <div style="width:60px; text-align:right; font-family:'JetBrains Mono',monospace; font-size:13px; color:#22C55E;">14–29j</div>
+          <div style="flex:1; height:8px; background:#1E1E1E; border-radius:4px;"><div style="width:75%; height:100%; background:#22C55E; border-radius:4px;"></div></div>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#22C55E;">×2</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="width:60px; text-align:right; font-family:'JetBrains Mono',monospace; font-size:13px; color:#FFA500;">30j+</div>
+          <div style="flex:1; height:8px; background:#1E1E1E; border-radius:4px;"><div style="width:100%; height:100%; background:linear-gradient(90deg, #FFA500, #FF6B00); border-radius:4px;"></div></div>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:12px; color:#FFA500;">×3</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Niveaux -->
+  <div class="card" style="margin-top:16px;">
+    <p class="card-label">6 niveaux de progression</p>
+    <div class="level-bar">
+      <div class="seg" style="background:#1a1a2e; color:#888; border:1px solid #333;">
+        <div>L'Endormi<br><span class="mono" style="font-size:8px;">0 XP</span></div>
+      </div>
+      <div class="seg" style="background:#1a2a1a; color:#22C55E; border:1px solid #22C55E33;">
+        <div>L'Éveillé<br><span class="mono" style="font-size:8px;">500</span></div>
+      </div>
+      <div class="seg" style="background:#1a2a3a; color:#3A86FF; border:1px solid #3A86FF33;">
+        <div>Le Bâtisseur<br><span class="mono" style="font-size:8px;">1 500</span></div>
+      </div>
+      <div class="seg" style="background:#2a2a1a; color:#C9A84C; border:1px solid #C9A84C33;">
+        <div>Le Souverain<br><span class="mono" style="font-size:8px;">3 000</span></div>
+      </div>
+      <div class="seg" style="background:#2a1a1a; color:#FFA500; border:1px solid #FFA50033;">
+        <div>Point de Bascule<br><span class="mono" style="font-size:8px;">6 000</span></div>
+      </div>
+      <div class="seg" style="background:linear-gradient(135deg, #1a0a2a, #2a0a1a); color:#F0F0F0; border:1px solid #3A86FF55;">
+        <div>Le 180<br><span class="mono" style="font-size:8px;">12 000</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- 5. PWA + STACK -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <p class="section-tag">Section 5</p>
+  <h2 class="section-title">PWA & Stack technique</h2>
+
+  <div class="grid-2">
+    <div class="card">
+      <p class="card-label">Progressive Web App</p>
+      <p>L'app s'installe comme une app native sur iPhone et Android. Pas de téléchargement App Store — juste "Ajouter à l'écran d'accueil".</p>
+      <ul style="color:#888; font-size:14px; line-height:2; padding-left:20px; margin-top:12px;">
+        <li>Mode standalone (pas de barre Safari)</li>
+        <li>Icône sur l'écran d'accueil</li>
+        <li>Thème OLED noir</li>
+        <li>Splash screen iOS</li>
+      </ul>
+    </div>
+    <div class="card">
+      <p class="card-label">Stack</p>
+      <table>
+        <tr><td style="color:#888; width:120px;">Frontend</td><td>Next.js 16, React 19, TypeScript</td></tr>
+        <tr><td style="color:#888;">Base de données</td><td>Supabase (PostgreSQL + Auth + RLS)</td></tr>
+        <tr><td style="color:#888;">Paiement</td><td>Stripe (webhook auto)</td></tr>
+        <tr><td style="color:#888;">Emails</td><td>Brevo (SMTP API)</td></tr>
+        <tr><td style="color:#888;">IA</td><td>Claude Haiku (rapports hebdo)</td></tr>
+        <tr><td style="color:#888;">Hébergement</td><td>Vercel (Paris, CDG1)</td></tr>
+        <tr><td style="color:#888;">Domaine</td><td>app.projet180.fr</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- 6. PAGES DE L'APP -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="section">
+  <p class="section-tag">Section 6</p>
+  <h2 class="section-title">Pages de l'application</h2>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3 style="color:#3A86FF;">Côté Client</h3>
+      <table>
+        <tr><td style="font-weight:700;">/dashboard</td><td style="color:#888;">Check-in quotidien, missions, mini classement, WhatsApp</td></tr>
+        <tr><td style="font-weight:700;">/programme</td><td style="color:#888;">Timeline 6 phases, bloc semaine en cours</td></tr>
+        <tr><td style="font-weight:700;">/classement</td><td style="color:#888;">Podium top 3, classement complet XP</td></tr>
+        <tr><td style="font-weight:700;">/profil</td><td style="color:#888;">Niveau, bilan IA, wins, questionnaire, mot de passe</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h3 style="color:#FFA500;">Côté Admin (Robin)</h3>
+      <table>
+        <tr><td style="font-weight:700;">Clients</td><td style="color:#888;">Vue d'ensemble de tous les clients</td></tr>
+        <tr><td style="font-weight:700;">Missions</td><td style="color:#888;">Créer habits & missions par client</td></tr>
+        <tr><td style="font-weight:700;">To-do</td><td style="color:#888;">Gérer les todos (système protégés)</td></tr>
+        <tr><td style="font-weight:700;">Programme</td><td style="color:#888;">Éditer le contenu des 26 semaines</td></tr>
+        <tr><td style="font-weight:700;">Config</td><td style="color:#888;">Liens WhatsApp, Skool, iClosed, contrat</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<!-- FOOTER -->
+<!-- ═══════════════════════════════════════════════════════════════════════════ -->
+<div style="text-align:center; padding:60px 24px 80px; border-top:1px solid #1E1E1E;">
+  <p style="font-size:10px; font-weight:700; letter-spacing:0.35em; text-transform:uppercase; color:#333;">
+    Projet180 — Développé par Enzo BF — Mars 2026
+  </p>
+</div>
+
+</body>
+</html>
