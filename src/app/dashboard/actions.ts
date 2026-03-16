@@ -93,9 +93,9 @@ export async function toggleHabitAction(
   const multiplier = completing ? (newStreak >= 30 ? 3 : newStreak >= 14 ? 2 : newStreak >= 7 ? 1.5 : 1) : 1
   const baseXP     = completing ? getXpDelta(newStreak) : -10 // on retire toujours 10 au décocochage
 
-  // Perfect day bonus : +25 XP si toutes les habitudes sont cochées
+  // Perfect day bonus : +50 XP si toutes les habitudes sont cochées
   const perfectDay = totalHabits > 0 && todayDone >= totalHabits
-  const bonusXP    = (completing && perfectDay) ? 25 : 0
+  const bonusXP    = (completing && perfectDay) ? 50 : 0
   const xpDelta    = baseXP + bonusXP
 
   const newXP        = Math.max(0, currentXP + xpDelta)

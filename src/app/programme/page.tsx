@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
-import ProgrammeClient, { type ProgramWeek } from './ProgrammeClient'
+import ProgrammeClient, { type ProgramContentRow } from './ProgrammeClient'
 
 export default async function ProgrammePage() {
   const supabase = await createClient()
@@ -14,12 +14,12 @@ export default async function ProgrammePage() {
     { data: onboarding },
     { data: questionnaire },
     { data: gamification },
-    { data: program },
+    { data: programContent },
   ] = await Promise.all([
     admin.from('onboarding_progress').select('completed_at').eq('user_id', user.id).single(),
     admin.from('questionnaire_responses').select('responses').eq('client_id', user.id).single(),
     admin.from('gamification').select('xp_total, current_streak, longest_streak, level').eq('client_id', user.id).single(),
-    admin.from('programs').select('content').eq('client_id', user.id).maybeSingle(),
+    admin.from('program_content').select('phase_number, week_number, title, objectives, focus_text, robin_notes').order('week_number', { ascending: true }),
   ])
 
   // Jour X / 180
@@ -42,8 +42,7 @@ export default async function ProgrammePage() {
         (gamification as { xp_total: number; current_streak: number; longest_streak: number; level: number })
         ?? { xp_total: 0, current_streak: 0, longest_streak: 0, level: 1 }
       }
-      content={(program?.content ?? []) as ProgramWeek[]}
-      onboardingDate={onboarding?.completed_at ?? null}
+      programContent={(programContent ?? []) as ProgramContentRow[]}
     />
   )
 }

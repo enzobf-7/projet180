@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Barlow_Condensed, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -14,9 +14,23 @@ const jetbrainsMono = JetBrains_Mono({
   variable: "--font-mono",
 });
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: '#0B0B0B',
+};
+
 export const metadata: Metadata = {
   title: "Projet180",
   description: "Programme de coaching 180 jours par Robin Duplouis",
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Projet180',
+  },
 };
 
 export default function RootLayout({
@@ -26,6 +40,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr">
+      <head>
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <link rel="apple-touch-icon" href="/icon-192.png" />
+      </head>
       <body className={`${barlowCondensed.variable} ${jetbrainsMono.variable} antialiased`}>
         {children}
       </body>

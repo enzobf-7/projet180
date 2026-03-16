@@ -43,7 +43,17 @@ interface Todo {
   created_at: string
 }
 
-type Tab = 'clients' | 'missions' | 'todos' | 'configuration'
+interface ProgramContentRow {
+  id?: string
+  phase_number: number
+  week_number: number
+  title: string
+  objectives: string
+  focus_text: string
+  robin_notes: string
+}
+
+type Tab = 'clients' | 'missions' | 'todos' | 'programme' | 'configuration'
 
 function InitialsBadge({ firstName, lastName }: { firstName: string; lastName: string }) {
   const initials = `${firstName?.[0] ?? ''}${lastName?.[0] ?? ''}`.toUpperCase()
@@ -101,6 +111,12 @@ export default function AdminPage() {
   const [addingTodo, setAddingTodo] = useState(false)
   const [todoErr, setTodoErr] = useState<string | null>(null)
 
+  // — Programme —
+  const [programContent, setProgramContent] = useState<ProgramContentRow[]>([])
+  const [loadingProgram, setLoadingProgram] = useState(false)
+  const [savingWeek, setSavingWeek] = useState<string | null>(null)
+  const [programMsg, setProgramMsg] = useState<string | null>(null)
+
   // ────────── Load settings ──────────
   useEffect(() => {
     async function loadSettings() {
@@ -157,6 +173,74 @@ export default function AdminPage() {
   }, [])
 
   useEffect(() => { loadTodos(selectedClientId) }, [selectedClientId, loadTodos])
+
+  // ────────── Load programme content ──────────
+  const PHASES = [
+    { num: 1, name: 'FONDATIONS', weeks: [1, 2, 3, 4] },
+    { num: 2, name: 'CONSTRUCTION', weeks: [5, 6, 7, 8, 9, 10, 11, 12, 13] },
+    { num: 3, name: 'CONSOLIDATION', weeks: [14, 15, 16, 17, 18] },
+    { num: 4, name: 'EXPANSION', weeks: [19, 20, 21, 22] },
+    { num: 5, name: 'MAÎTRISE', weeks: [23, 24, 25] },
+    { num: 6, name: 'LE 180', weeks: [26] },
+  ]
+
+  const loadProgramContent = useCallback(async () => {
+    setLoadingProgram(true)
+    const { data, error } = await supabase
+      .from('program_content')
+      .select('id, phase_number, week_number, title, objectives, focus_text, robin_notes')
+      .order('week_number', { ascending: true })
+    if (!error && data) {
+      setProgramContent(data as ProgramContentRow[])
+    }
+    setLoadingProgram(false)
+  }, [supabase])
+
+  useEffect(() => {
+    if (activeTab === 'programme') loadProgramContent()
+  }, [activeTab, loadProgramContent])
+
+  function getProgramWeek(phase: number, week: number): ProgramContentRow {
+    const existing = programContent.find(p => p.phase_number === phase && p.week_number === week)
+    return existing ?? { phase_number: phase, week_number: week, title: '', objectives: '', focus_text: '', robin_notes: '' }
+  }
+
+  function updateProgramWeek(phase: number, week: number, field: keyof ProgramContentRow, value: string) {
+    setProgramContent(prev => {
+      const idx = prev.findIndex(p => p.phase_number === phase && p.week_number === week)
+      if (idx >= 0) {
+        const updated = [...prev]
+        updated[idx] = { ...updated[idx], [field]: value }
+        return updated
+      }
+      return [...prev, { phase_number: phase, week_number: week, title: '', objectives: '', focus_text: '', robin_notes: '', [field]: value }]
+    })
+  }
+
+  async function handleSaveWeek(phase: number, week: number) {
+    const key = `${phase}-${week}`
+    setSavingWeek(key)
+    setProgramMsg(null)
+    const content = getProgramWeek(phase, week)
+    const { error } = await supabase
+      .from('program_content')
+      .upsert({
+        phase_number: phase,
+        week_number: week,
+        title: content.title,
+        objectives: content.objectives,
+        focus_text: content.focus_text,
+        robin_notes: content.robin_notes,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'phase_number,week_number' })
+    if (error) {
+      setProgramMsg('Erreur lors de la sauvegarde.')
+    } else {
+      setProgramMsg(`Semaine ${week} sauvegardée.`)
+      await loadProgramContent()
+    }
+    setSavingWeek(null)
+  }
 
   // ────────── Settings save ──────────
   async function handleSaveSettings(e: React.FormEvent) {
@@ -313,6 +397,7 @@ export default function AdminPage() {
     { key: 'clients', label: 'Clients' },
     { key: 'missions', label: 'Missions' },
     { key: 'todos', label: 'To-do' },
+    { key: 'programme', label: 'Programme' },
     { key: 'configuration', label: 'Config' },
   ]
 
@@ -980,6 +1065,161 @@ export default function AdminPage() {
             </div>
           )
         })()}
+
+        {/* ══ Tab: Programme ══ */}
+        {activeTab === 'programme' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {programMsg && (
+              <div style={{
+                fontSize: 13,
+                color: programMsg.startsWith('Erreur') ? '#f97373' : '#22c55e',
+                background: programMsg.startsWith('Erreur') ? '#1a0000' : '#001a00',
+                border: `1px solid ${programMsg.startsWith('Erreur') ? '#7f1d1d' : '#16a34a'}`,
+                borderRadius: 10, padding: '10px 14px',
+              }}>
+                {programMsg}
+              </div>
+            )}
+
+            {loadingProgram ? (
+              <div style={{ padding: '40px 20px', textAlign: 'center', color: '#484848', fontSize: 13 }}>
+                Chargement du programme…
+              </div>
+            ) : (
+              PHASES.map(phase => (
+                <div key={phase.num} style={{ borderRadius: 14, border: '1px solid #1E1E1E', background: '#0F0F0F', overflow: 'hidden' }}>
+                  {/* Phase header */}
+                  <div style={{
+                    padding: '16px 20px', borderBottom: '1px solid #1E1E1E',
+                    display: 'flex', alignItems: 'center', gap: 12,
+                  }}>
+                    <div style={{
+                      width: 28, height: 28, borderRadius: 7,
+                      background: 'rgba(58,134,255,0.15)', border: '1px solid rgba(58,134,255,0.3)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 13, fontWeight: 900, color: '#3A86FF',
+                      fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+                    }}>
+                      {phase.num}
+                    </div>
+                    <div>
+                      <div style={{
+                        fontSize: 14, fontWeight: 800, letterSpacing: '0.15em',
+                        textTransform: 'uppercase', color: '#F5F5F5',
+                        fontFamily: 'var(--font-barlow, "Barlow Condensed", sans-serif)',
+                      }}>
+                        Phase {phase.num} — {phase.name}
+                      </div>
+                      <div style={{ fontSize: 11, color: '#484848', marginTop: 2 }}>
+                        Semaine{phase.weeks.length > 1 ? 's' : ''} {phase.weeks[0]}
+                        {phase.weeks.length > 1 ? ` à ${phase.weeks[phase.weeks.length - 1]}` : ''}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Weeks */}
+                  <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+                    {phase.weeks.map(week => {
+                      const content = getProgramWeek(phase.num, week)
+                      const weekKey = `${phase.num}-${week}`
+                      const isSaving = savingWeek === weekKey
+                      return (
+                        <div key={week} style={{
+                          padding: '16px', borderRadius: 10,
+                          border: '1px solid #1A1A1A', background: '#080808',
+                        }}>
+                          <div style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            marginBottom: 14,
+                          }}>
+                            <span style={{
+                              fontSize: 12, fontWeight: 800, letterSpacing: '0.18em',
+                              textTransform: 'uppercase', color: '#3A86FF',
+                              fontFamily: 'var(--font-barlow, "Barlow Condensed", sans-serif)',
+                            }}>
+                              Semaine {week}
+                            </span>
+                            <button
+                              onClick={() => handleSaveWeek(phase.num, week)}
+                              disabled={isSaving}
+                              style={{
+                                padding: '6px 16px', borderRadius: 8,
+                                background: isSaving ? '#0A1A3A' : '#3A86FF',
+                                border: 'none', cursor: isSaving ? 'not-allowed' : 'pointer',
+                                fontSize: 10, fontWeight: 700, letterSpacing: '0.15em',
+                                textTransform: 'uppercase', color: '#FFFFFF',
+                                opacity: isSaving ? 0.6 : 1, transition: 'all 0.15s',
+                              }}
+                            >
+                              {isSaving ? 'Sauvegarde…' : 'Sauvegarder'}
+                            </button>
+                          </div>
+
+                          <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                              <label style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#484848' }}>
+                                Titre
+                              </label>
+                              <input
+                                type="text"
+                                value={content.title}
+                                onChange={e => updateProgramWeek(phase.num, week, 'title', e.target.value)}
+                                placeholder="Ex : L'art du matin"
+                                style={inputStyle}
+                              />
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                              <label style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#484848' }}>
+                                Objectifs
+                              </label>
+                              <input
+                                type="text"
+                                value={content.objectives}
+                                onChange={e => updateProgramWeek(phase.num, week, 'objectives', e.target.value)}
+                                placeholder="Ex : Mettre en place la routine matinale"
+                                style={inputStyle}
+                              />
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: 12 }}>
+                            <label style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#484848' }}>
+                              Focus
+                            </label>
+                            <input
+                              type="text"
+                              value={content.focus_text}
+                              onChange={e => updateProgramWeek(phase.num, week, 'focus_text', e.target.value)}
+                              placeholder="Phrase de focus pour la semaine"
+                              style={inputStyle}
+                            />
+                          </div>
+
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: 12 }}>
+                            <label style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#484848' }}>
+                              Notes Robin
+                            </label>
+                            <textarea
+                              value={content.robin_notes}
+                              onChange={e => updateProgramWeek(phase.num, week, 'robin_notes', e.target.value)}
+                              placeholder="Notes personnelles, rappels, conseils…"
+                              rows={3}
+                              style={{
+                                ...inputStyle,
+                                resize: 'vertical',
+                                minHeight: 60,
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
 
         {/* ══ Tab: Configuration ══ */}
         {activeTab === 'configuration' && (

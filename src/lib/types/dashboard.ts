@@ -4,6 +4,10 @@ export interface Habit {
   id: string
   name: string
   category: 'habit' | 'mission'
+  description?: string
+  progress_percent?: number
+  xp_reward?: number
+  period?: string
 }
 
 export interface Gamification {
@@ -19,6 +23,7 @@ export interface LeaderboardEntry {
   firstName: string
   xp: number
   streak: number
+  level: number
   isMe: boolean
 }
 
@@ -32,9 +37,11 @@ export interface DashboardProps {
   leaderboard: LeaderboardEntry[]
   onboardingDate: string | null
   whatsappLink: string | null
+  robinWhatsapp: string | null
   weeklyXP: number
   initialTodos: Todo[]
   initialWins: Win[]
+  initialPersonalTodos: PersonalTodo[]
   weekNumber: number
 }
 
@@ -49,6 +56,14 @@ export interface Todo {
   title: string
   is_system: boolean
   completed_date: string | null
+  day_of_week: number | null
+}
+
+export interface PersonalTodo {
+  id: string
+  title: string
+  target_date: string
+  completed: boolean
 }
 
 export interface Win {

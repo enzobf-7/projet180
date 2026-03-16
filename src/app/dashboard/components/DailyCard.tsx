@@ -1,8 +1,8 @@
 'use client'
 
-import { memo } from 'react'
+import { memo, useState } from 'react'
 import { C, D, M } from '@/lib/design-tokens'
-import type { Habit, Todo } from '@/lib/types'
+import type { Habit, Todo, PersonalTodo } from '@/lib/types'
 
 interface Props {
   habits: Habit[]
@@ -15,22 +15,59 @@ interface Props {
   todos: Todo[]
   todayDate: string
   onToggleTodo: (todoId: string, currentDate: string | null) => void
+  personalTodos: PersonalTodo[]
+  onTogglePersonalTodo: (id: string, completed: boolean) => void
+  onAddPersonalTodos: (titles: string[]) => Promise<void>
+  allDone: boolean
+  whatsappLink: string | null
+  whatsappMessage: string
+  jourX: number
 }
 
 export const DailyCard = memo(function DailyCard({
   habits, completed, loadingId, firstName, isMobile, celebrateRing, onToggle,
   todos, todayDate, onToggleTodo,
+  personalTodos, onTogglePersonalTodo, onAddPersonalTodos,
+  allDone, whatsappLink, whatsappMessage,
 }: Props) {
   const habitsOnly = habits.filter(h => h.category === 'habit')
-  const missions = habits.filter(h => h.category === 'mission')
-  const totalHabits = habits.length
-  const completedHabits = completed.size
-  const completedPct = totalHabits > 0 ? Math.round((completedHabits / totalHabits) * 100) : 0
-  const allHabitsDone = totalHabits > 0 && completedHabits === totalHabits
-  const allTodosDone = todos.length > 0 && todos.every(t => t.completed_date === todayDate)
-  const allDone = allHabitsDone && allTodosDone
 
-  const renderHabitRow = (h: Habit, accentColor: string) => {
+  // Count all items for the unified counter
+  const todayTodos = todos
+  const totalItems = habitsOnly.length + todayTodos.length + personalTodos.length
+  const completedHabits = habitsOnly.filter(h => completed.has(h.id)).length
+  const completedTodos = todayTodos.filter(t => t.completed_date === todayDate).length
+  const completedPersonal = personalTodos.filter(p => p.completed).length
+  const completedItems = completedHabits + completedTodos + completedPersonal
+  const completedPct = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0
+
+  // TodoPrepForm state
+  const [showPrepForm, setShowPrepForm] = useState(false)
+  const [prepInput, setPrepInput] = useState('')
+  const [pendingTodos, setPendingTodos] = useState<string[]>([])
+  const [prepLoading, setPrepLoading] = useState(false)
+
+  const handleAddPending = () => {
+    const t = prepInput.trim()
+    if (!t) return
+    setPendingTodos(prev => [...prev, t])
+    setPrepInput('')
+  }
+
+  const handleRemovePending = (idx: number) => {
+    setPendingTodos(prev => prev.filter((_, i) => i !== idx))
+  }
+
+  const handleValidatePrep = async () => {
+    if (pendingTodos.length === 0) return
+    setPrepLoading(true)
+    await onAddPersonalTodos(pendingTodos)
+    setPendingTodos([])
+    setShowPrepForm(false)
+    setPrepLoading(false)
+  }
+
+  const renderHabitRow = (h: Habit) => {
     const done = completed.has(h.id)
     const loading = loadingId === h.id
     return (
@@ -45,8 +82,8 @@ export const DailyCard = memo(function DailyCard({
         <div style={{
           width: 22, height: 22, flexShrink: 0,
           borderRadius: 6,
-          border: `2px solid ${done ? accentColor : C.muted}`,
-          background: done ? accentColor : 'transparent',
+          border: `2px solid ${done ? C.greenL : C.muted}`,
+          background: done ? C.greenL : 'transparent',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           transition: 'all 0.2s ease',
           ...(done ? { animation: 'p180-habit-check 0.35s cubic-bezier(0.34,1.56,0.64,1)' } : {}),
@@ -68,34 +105,146 @@ export const DailyCard = memo(function DailyCard({
 
   const renderTodoRow = (todo: Todo) => {
     const isDone = todo.completed_date === todayDate
+    const isPrepTodo = todo.title === 'Préparer to-do de demain'
     return (
-      <button key={todo.id} onClick={() => onToggleTodo(todo.id, todo.completed_date)} style={{
+      <div key={todo.id}>
+        <button onClick={() => {
+          onToggleTodo(todo.id, todo.completed_date)
+          if (isPrepTodo && !isDone) setShowPrepForm(true)
+        }} style={{
+          display: 'flex', alignItems: 'center', gap: 14,
+          width: '100%', background: 'none', border: 'none', cursor: 'pointer',
+          padding: '11px 24px',
+          borderBottom: `1px solid ${C.border}`,
+          transition: 'opacity 0.15s',
+        }}>
+          <div style={{
+            width: 22, height: 22, flexShrink: 0,
+            borderRadius: 6,
+            border: `2px solid ${isDone ? C.greenL : C.muted}`,
+            background: isDone ? C.greenL : 'transparent',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'all 0.2s',
+          }}>
+            {isDone && <span style={{ color: 'white', fontSize: '13px', lineHeight: 1 }}>✓</span>}
+          </div>
+          <span style={{
+            ...D, fontWeight: 600, fontSize: '14px', letterSpacing: '0.02em',
+            color: isDone ? C.muted : C.text,
+            textDecoration: isDone ? 'line-through' : 'none',
+            textAlign: 'left',
+            flex: 1,
+          }}>
+            {todo.title}
+          </span>
+          <span style={{
+            ...D, fontWeight: 700, fontSize: '8px', letterSpacing: '0.15em',
+            color: C.orange, background: C.orangeBg,
+            padding: '2px 8px', borderRadius: 4,
+            textTransform: 'uppercase' as const,
+          }}>
+            OBLIGATOIRE
+          </span>
+        </button>
+
+        {/* Prep form inline */}
+        {isPrepTodo && (
+          <div style={{
+            maxHeight: showPrepForm ? 400 : 0,
+            overflow: 'hidden',
+            transition: 'max-height 0.3s ease',
+          }}>
+            <div style={{ padding: '12px 24px 16px', background: C.bg, borderBottom: `1px solid ${C.border}` }}>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+                <input
+                  type="text"
+                  value={prepInput}
+                  onChange={e => setPrepInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleAddPending()}
+                  placeholder="Ajouter une tâche pour demain..."
+                  style={{
+                    flex: 1, background: C.surface, border: `1px solid ${C.border}`,
+                    borderRadius: 8, padding: '10px 14px',
+                    color: C.text, ...D, fontSize: '13px',
+                    outline: 'none',
+                  }}
+                />
+                <button onClick={handleAddPending} style={{
+                  background: C.accent, border: 'none', borderRadius: 8,
+                  width: 40, cursor: 'pointer',
+                  color: 'white', ...D, fontWeight: 700, fontSize: '18px',
+                }}>
+                  +
+                </button>
+              </div>
+
+              {pendingTodos.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 12 }}>
+                  {pendingTodos.map((t, i) => (
+                    <div key={i} style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '6px 12px', background: C.surface, borderRadius: 6,
+                      border: `1px solid ${C.border}`,
+                    }}>
+                      <span style={{ ...D, fontSize: '13px', color: C.text }}>{t}</span>
+                      <button onClick={() => handleRemovePending(i)} style={{
+                        background: 'none', border: 'none', cursor: 'pointer',
+                        color: C.muted, fontSize: '16px', padding: '0 4px',
+                      }}>
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <button
+                onClick={handleValidatePrep}
+                disabled={pendingTodos.length === 0 || prepLoading}
+                style={{
+                  width: '100%', padding: '10px',
+                  background: pendingTodos.length > 0 ? C.accent : C.dimmed,
+                  border: 'none', borderRadius: 8, cursor: pendingTodos.length > 0 ? 'pointer' : 'default',
+                  ...D, fontWeight: 700, fontSize: '12px', letterSpacing: '0.15em',
+                  textTransform: 'uppercase' as const,
+                  color: pendingTodos.length > 0 ? 'white' : C.muted,
+                  opacity: prepLoading ? 0.6 : 1,
+                }}
+              >
+                {prepLoading ? 'Enregistrement...' : `Valider (${pendingTodos.length})`}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  const renderPersonalTodoRow = (pt: PersonalTodo) => {
+    return (
+      <button key={pt.id} onClick={() => onTogglePersonalTodo(pt.id, !pt.completed)} style={{
         display: 'flex', alignItems: 'center', gap: 14,
         width: '100%', background: 'none', border: 'none', cursor: 'pointer',
         padding: '11px 24px',
         borderBottom: `1px solid ${C.border}`,
-        transition: 'opacity 0.15s',
       }}>
         <div style={{
           width: 22, height: 22, flexShrink: 0,
           borderRadius: 6,
-          border: `2px solid ${isDone ? C.greenL : C.muted}`,
-          background: isDone ? C.greenL : 'transparent',
+          border: `2px solid ${pt.completed ? C.greenL : C.muted}`,
+          background: pt.completed ? C.greenL : 'transparent',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           transition: 'all 0.2s',
         }}>
-          {isDone && <span style={{ color: 'white', fontSize: '13px', lineHeight: 1 }}>✓</span>}
+          {pt.completed && <span style={{ color: 'white', fontSize: '13px', lineHeight: 1 }}>✓</span>}
         </div>
         <span style={{
           ...D, fontWeight: 600, fontSize: '14px', letterSpacing: '0.02em',
-          color: isDone ? C.muted : C.text,
-          textDecoration: isDone ? 'line-through' : 'none',
+          color: pt.completed ? C.muted : C.text,
+          textDecoration: pt.completed ? 'line-through' : 'none',
           textAlign: 'left',
         }}>
-          {todo.title}
-          {todo.is_system && (
-            <span style={{ ...M, fontSize: '9px', color: C.accent, marginLeft: 8, letterSpacing: '0.1em' }}>SYS</span>
-          )}
+          {pt.title}
         </span>
       </button>
     )
@@ -108,7 +257,7 @@ export const DailyCard = memo(function DailyCard({
       borderRadius: 14,
       overflow: 'hidden',
     }}>
-      {/* Header with ring */}
+      {/* Header with ring + counter */}
       <div style={{
         padding: isMobile ? '18px 16px 14px' : '20px 24px 16px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -118,7 +267,7 @@ export const DailyCard = memo(function DailyCard({
           <div className={celebrateRing ? 'p180-ring-done' : ''} style={{ position: 'relative', width: 48, height: 48, flexShrink: 0 }}>
             <svg width={48} height={48} style={{ transform: 'rotate(-90deg)' }}>
               <circle cx={24} cy={24} r={20} fill="none" stroke={C.dimmed} strokeWidth={3} />
-              <circle cx={24} cy={24} r={20} fill="none" stroke={allHabitsDone ? C.greenL : C.accent} strokeWidth={3}
+              <circle cx={24} cy={24} r={20} fill="none" stroke={allDone ? C.greenL : C.accent} strokeWidth={3}
                 strokeDasharray={`${2 * Math.PI * 20}`}
                 strokeDashoffset={`${2 * Math.PI * 20 * (1 - completedPct / 100)}`}
                 strokeLinecap="round"
@@ -128,57 +277,113 @@ export const DailyCard = memo(function DailyCard({
             <div style={{
               position: 'absolute', inset: 0,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              ...M, fontWeight: 700, fontSize: '13px', color: allHabitsDone ? C.greenL : C.text,
+              ...M, fontWeight: 700, fontSize: '13px', color: allDone ? C.greenL : C.text,
             }}>
-              {allHabitsDone ? '✓' : `${completedPct}%`}
+              {allDone ? '✓' : `${completedPct}%`}
             </div>
           </div>
           <div>
             <div style={{ ...D, fontWeight: 800, fontSize: '16px', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: C.text }}>
-              Check-in du jour
+              To-do du jour
             </div>
             <div style={{ ...M, fontSize: '10px', color: C.muted, marginTop: 2 }}>
-              {completedHabits}/{totalHabits} habits — {allHabitsDone ? 'Tout validé !' : `${totalHabits - completedHabits} restant${totalHabits - completedHabits > 1 ? 's' : ''}`}
+              {completedItems}/{totalItems} — {allDone ? 'Tout validé !' : `${totalItems - completedItems} restant${totalItems - completedItems > 1 ? 's' : ''}`}
             </div>
           </div>
         </div>
       </div>
 
-      {/* Habits */}
+      {/* Habitudes */}
       {habitsOnly.length > 0 && (
         <div>
           <div style={{ padding: '12px 24px 6px', ...D, fontWeight: 700, fontSize: '10px', letterSpacing: '0.2em', color: C.muted, textTransform: 'uppercase' as const }}>
             Habitudes
           </div>
-          {habitsOnly.map(h => renderHabitRow(h, C.greenL))}
+          {habitsOnly.map(h => renderHabitRow(h))}
         </div>
       )}
 
-      {/* Missions */}
-      {missions.length > 0 && (
+      {/* Tâches obligatoires (system todos) */}
+      {todayTodos.length > 0 && (
         <div>
-          <div style={{ padding: '14px 24px 6px', ...D, fontWeight: 700, fontSize: '10px', letterSpacing: '0.2em', color: C.accent, textTransform: 'uppercase' as const }}>
-            Missions
+          <div style={{ padding: '14px 24px 6px', ...D, fontWeight: 700, fontSize: '10px', letterSpacing: '0.2em', color: C.orange, textTransform: 'uppercase' as const }}>
+            Obligatoires
           </div>
-          {missions.map(h => renderHabitRow(h, C.accent))}
+          {todayTodos.map(renderTodoRow)}
         </div>
       )}
 
-      {/* Todos */}
-      {todos.length > 0 && (
+      {/* Tâches perso */}
+      {personalTodos.length > 0 && (
         <div>
           <div style={{ padding: '14px 24px 6px', ...D, fontWeight: 700, fontSize: '10px', letterSpacing: '0.2em', color: C.muted, textTransform: 'uppercase' as const }}>
-            To-do
+            Mes tâches
           </div>
-          {todos.map(renderTodoRow)}
+          {personalTodos.map(renderPersonalTodoRow)}
         </div>
       )}
 
-      {/* All done message */}
+      {/* WhatsApp button — locked until 100% */}
+      {whatsappLink && (
+        <div style={{ padding: '12px 24px 16px' }}>
+          {allDone ? (
+            <a
+              href={`https://wa.me/${whatsappLink.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(whatsappMessage)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                width: '100%', padding: '14px',
+                background: `${C.greenL}20`,
+                border: `1px solid ${C.greenL}40`,
+                borderRadius: 10,
+                textDecoration: 'none',
+                transition: 'all 0.3s ease',
+              }}
+            >
+              <span style={{ fontSize: '18px' }}>📱</span>
+              <span style={{ ...D, fontWeight: 700, fontSize: '13px', color: C.greenL, letterSpacing: '0.1em', textTransform: 'uppercase' as const }}>
+                Partager sur WhatsApp
+              </span>
+              <span style={{
+                ...D, fontWeight: 700, fontSize: '8px', letterSpacing: '0.15em',
+                color: C.orange, background: C.orangeBg,
+                padding: '2px 8px', borderRadius: 4,
+              }}>
+                OBLIGATOIRE
+              </span>
+            </a>
+          ) : (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+              width: '100%', padding: '14px',
+              background: C.dimmed,
+              border: `1px solid ${C.border}`,
+              borderRadius: 10,
+              opacity: 0.35,
+              cursor: 'not-allowed',
+            }}>
+              <span style={{ fontSize: '18px' }}>📱</span>
+              <span style={{ ...D, fontWeight: 700, fontSize: '13px', color: C.muted, letterSpacing: '0.1em', textTransform: 'uppercase' as const }}>
+                Partager sur WhatsApp
+              </span>
+              <span style={{
+                ...D, fontWeight: 700, fontSize: '8px', letterSpacing: '0.15em',
+                color: C.orange, background: C.orangeBg,
+                padding: '2px 8px', borderRadius: 4,
+              }}>
+                OBLIGATOIRE
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* All done + bonus message */}
       {allDone && (
         <div style={{ padding: '16px 24px', textAlign: 'center', background: `${C.green}10` }}>
           <span style={{ ...D, fontWeight: 700, fontSize: '13px', color: C.greenL, letterSpacing: '0.08em' }}>
-            ✓ Journée complète — bien joué {firstName} !
+            ✓ Journée parfaite — +50 XP bonus, bien joué {firstName} !
           </span>
         </div>
       )}

@@ -20,9 +20,9 @@ Plateforme de coaching 180j "Projet180" par Robin Duplouis.
 ## Statut actuel
 - **Phase** : pre-lancement (pas encore en production)
 - **Domaine cible** : `app.projet180.fr`
-- **Migrations** : 6 fichiers a executer dans Supabase avant go-live
-- **En cours** : [a mettre a jour]
-- **Bloquants connus** : [a mettre a jour]
+- **Migrations** : 7 fichiers a executer dans Supabase avant go-live
+- **En cours** : preparation demo 18 mars — toutes les pages implementees
+- **Bloquants connus** : migration 20260316 a executer, PWA icons a generer
 
 ---
 
@@ -35,12 +35,12 @@ npm run dev   # port 3000 (depuis la racine projet180-app/)
 ```
 /                -> login (email/password)
 /onboarding      -> flow 5 etapes (nouveau client)
-/dashboard       -> check-in habitudes/missions, XP, streaks, todos, wins, leaderboard
-/profil          -> stats + reponses questionnaire (6 sections)
-/programme       -> viewer programme 180j (3 phases, 26 semaines)
-/messagerie      -> messagerie client <-> Robin
-/admin           -> panel Robin (4 onglets : clients, missions/habits, todos, config)
-/admin/client/[id] -> fiche detaillee d'un client
+/dashboard       -> check-in unifie (habits + todos obligatoires + taches perso), missions, mini classement, contact Robin WhatsApp
+/profil          -> niveau + bilan IA hebdo + compilation wins + questionnaire (6 sections)
+/programme       -> timeline verticale 6 phases + bloc "cette semaine" (contenu Robin)
+/classement      -> podium top 3 + classement complet par XP
+/admin           -> panel Robin (5 onglets : clients, missions/habits, todos, programme, config)
+/admin/client/[id] -> fiche detaillee d'un client + slider progression missions
 /admin/messagerie -> messagerie admin -> clients
 ```
 
@@ -95,18 +95,20 @@ category text check (category in ('habit', 'mission'))
 | Table | FK principale | Notes |
 |-------|-------------|-------|
 | `profiles` | `id` = auth.users.id | `role` ('admin'/'client'), `email`, `first_name`, `last_name` |
-| `app_settings` | — | 4 champs config (WhatsApp, Skool, iClosed, contrat PDF) |
+| `app_settings` | — | 5 champs config (WhatsApp groupe, Skool, iClosed, contrat PDF, `robin_whatsapp`) |
 | `onboarding_progress` | `user_id` | Etapes 1-5, `step1_signature_name`, `step1_signed_at`, `completed_at` |
 | `questionnaire_responses` | `client_id` | 40+ champs reponses formulaire (7 sections) |
 | `programs` | `client_id` | Donnees programme 180j |
-| `habits` | `client_id` | `is_active`, `sort_order`, `category` ('habit'\|'mission'), `created_by` ('admin'\|'client') |
+| `habits` | `client_id` | `is_active`, `sort_order`, `category` ('habit'\|'mission'), `created_by` ('admin'\|'client'), `progress_percent`, `description`, `xp_reward`, `period` |
 | `habit_logs` | `client_id` | Check-ins quotidiens, `date` (YYYY-MM-DD), `completed` |
 | `weekly_reports` | `client_id` | Rapports hebdo auto IA, `week_number` (1-26) |
 | `gamification` | `client_id` | `xp_total`, `current_streak`, `longest_streak`, `level` |
 | `messages` | `sender_id`, `receiver_id` | Messagerie Robin <-> clients |
 | `milestone_emails_sent` | `client_id` | Deduplique emails J30/J60/J90/J180 via `(client_id, milestone_day)` unique |
-| `todos` | `client_id` | `title`, `is_system` (bool — 2 todos fixes), `completed_date` (date) |
+| `todos` | `client_id` | `title`, `is_system` (bool — 2 todos fixes), `completed_date` (date), `day_of_week` (null=quotidien, 0=dimanche) |
 | `wins` | `client_id` | `content` text, `week_number` int. Index sur `(client_id, week_number)` |
+| `personal_todos` | `client_id` | `title`, `target_date` (date), `completed` (bool). Taches perso ajoutees via "Preparer to-do de demain" |
+| `program_content` | — | Table globale. `phase_number`, `week_number` (unique), `title`, `objectives`, `focus_text`, `robin_notes` |
 
 ---
 
@@ -133,7 +135,7 @@ import { updateSession } from '@/lib/supabase/middleware'   // middleware auth r
 | Composant | Role |
 |-----------|------|
 | `TopBar` | Header horizontal unifie — remplace Sidebar + StickyHeader + MobileBottomNav. Affiche JOUR X/180 centre |
-| `DailyCard` | Fusion de l'ancien CheckInCard + TodoCard — check-in habits/missions + todos en une carte |
+| `DailyCard` | Check-in unifie : habits + todos obligatoires (badge orange) + taches perso. Counter X/Y. Inline form "Preparer to-do de demain". Bouton WhatsApp verrouille jusqu'a 100% |
 | `WinsCard` | Wins de la semaine — **affiche le dimanche uniquement** |
 | `ProgressionPanel` | Badges avec descriptions + progression, streak avec paliers XP |
 | `LeaderboardCard` | Top 100 clients par XP, highlight user actuel |
@@ -142,6 +144,8 @@ import { updateSession } from '@/lib/supabase/middleware'   // middleware auth r
 | `AnimatedCounter` | Transitions numeriques animees (XP, streaks) |
 
 > Composants supprimes : `CheckInCard`, `TodoCard`, `Sidebar`, `StickyHeader`, `MobileBottomNav`
+> Pages supprimees : `/messagerie` (remplacee par WhatsApp direct)
+> Pages ajoutees : `/classement` (podium + classement complet)
 
 ---
 
@@ -164,7 +168,7 @@ import { updateSession } from '@/lib/supabase/middleware'   // middleware auth r
 src/app/dashboard/actions.ts   -> Server action toggleHabitAction()
 src/app/dashboard/utils.ts     -> getXpDelta(streak) : base 10 XP, x1.5 a 7j, x2 a 14j, x3 a 30j
 ```
-- **Perfect day bonus** : tous les habits completes -> multiplicateur x1.5
+- **Perfect day bonus** : tous les habits completes -> +50 XP bonus
 - **Streak** : incremente au check-in quotidien, reset si jour saute
 - **Optimistic UI** : mise a jour locale immediate, sync serveur en background
 
@@ -187,6 +191,7 @@ src/app/dashboard/utils.ts     -> getXpDelta(streak) : base 10 XP, x1.5 a 7j, x2
 - **Fond OLED** : `#0B0B0B` (bg) / Surface `#0F0F0F` / Sidebar `#0A0A0A` / Border `#1E1E1E`
 - **Muted** : `#484848`
 - **Vert** : `#15803D` (wins/todos), `#22C55E` (clair)
+- **Orange** : `#FFA500` (badges obligatoires, todos systeme)
 - **Fonts** : Barlow Condensed (display, labels, boutons), JetBrains Mono (XP, nombres)
 - **Typo globale** : `uppercase tracking-wider font-medium`
 - UI en francais
@@ -249,6 +254,7 @@ supabase/migrations/20260311_habits_category.sql
 supabase/migrations/20260311_todos.sql
 supabase/migrations/20260311_wins.sql
 supabase/migrations/20260311_system_todos.sql
+supabase/migrations/20260316_demo_prep.sql
 ```
 
 ## Go-live checklist

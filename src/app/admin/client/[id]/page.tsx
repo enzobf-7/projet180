@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { MissionProgressPanel } from './MissionProgressPanel'
 
 // ─── Design tokens ────────────────────────────────────────────────────────────
 const S = {
@@ -105,7 +106,7 @@ export default async function ClientFiche({
       admin.from('profiles').select('first_name, last_name, email').eq('id', id).single(),
       admin.from('questionnaire_responses').select('responses, submitted_at').eq('client_id', id).single(),
       admin.from('gamification').select('xp_total, current_streak, longest_streak').eq('client_id', id).single(),
-      admin.from('habits').select('id, name, is_active').eq('client_id', id).order('sort_order'),
+      admin.from('habits').select('id, name, category, is_active, progress_percent, description, xp_reward, period, sort_order').eq('client_id', id).order('sort_order'),
       admin.from('weekly_reports').select('id, week_number, motivation_score, submitted_at, responses').eq('client_id', id).order('week_number', { ascending: false }),
       admin.from('onboarding_progress').select('completed_at').eq('user_id', id).single(), // ← user_id, pas client_id
     ])
@@ -245,18 +246,29 @@ export default async function ClientFiche({
           )}
         </section>
 
-        {/* ── Habits ── */}
+        {/* ── Missions (progression) ── */}
+        <MissionProgressPanel
+          missions={habits.filter((h: any) => h.category === 'mission').map((h: any) => ({
+            id: h.id,
+            name: h.name,
+            is_active: h.is_active,
+            progress_percent: h.progress_percent ?? 0,
+            description: h.description ?? null,
+          }))}
+        />
+
+        {/* ── Habitudes ── */}
         <section>
           <h2 style={{ ...D, fontSize: '1.05rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.18em', marginBottom: '1.25rem', color: S.label }}>
-            Habits
+            Habitudes
           </h2>
-          {habits.length === 0 ? (
+          {habits.filter((h: any) => h.category !== 'mission').length === 0 ? (
             <div style={{ background: S.surface, border: `1px solid ${S.border}`, borderRadius: '1rem', padding: '2rem', textAlign: 'center', color: S.muted, fontSize: '0.875rem' }}>
-              Aucune habit configurée
+              Aucune habitude configurée
             </div>
           ) : (
             <div style={{ background: S.surface, border: `1px solid ${S.border}`, borderRadius: '1rem', overflow: 'hidden' }}>
-              {habits.map((h, i) => (
+              {habits.filter((h: any) => h.category !== 'mission').map((h: any, i: number, arr: any[]) => (
                 <div
                   key={h.id}
                   style={{
@@ -264,7 +276,7 @@ export default async function ClientFiche({
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     padding: '0.875rem 1.25rem',
-                    borderBottom: i < habits.length - 1 ? `1px solid ${S.border}` : undefined,
+                    borderBottom: i < arr.length - 1 ? `1px solid ${S.border}` : undefined,
                   }}
                 >
                   <span style={{ fontSize: '0.875rem', color: h.is_active ? S.text : S.muted }}>

@@ -2,6 +2,7 @@
 
 import { memo } from 'react'
 import { C, D, M } from '@/lib/design-tokens'
+import P180Logo from '@/components/P180Logo'
 
 interface NavItem {
   label: string
@@ -17,6 +18,13 @@ interface Props {
   navItems: NavItem[]
   onSignOut: () => void
 }
+
+export const NAV_ITEMS_CLIENT = [
+  { label: 'Dashboard',  href: '/dashboard' },
+  { label: 'Programme',  href: '/programme' },
+  { label: 'Classement', href: '/classement' },
+  { label: 'Profil',     href: '/profil' },
+]
 
 export const TopBar = memo(function TopBar({ jourX, daysLeft, daysPct, firstName, navItems, onSignOut }: Props) {
   return (
@@ -34,19 +42,10 @@ export const TopBar = memo(function TopBar({ jourX, daysLeft, daysPct, firstName
       }}>
         {/* Logo */}
         <a href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', flexShrink: 0 }}>
-          <div style={{
-            width: 34, height: 34,
-            background: C.accent,
-            clipPath: 'polygon(12% 0%, 88% 0%, 100% 12%, 100% 88%, 88% 100%, 12% 100%, 0% 88%, 0% 12%)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <span style={{ ...D, fontWeight: 900, fontSize: '14px', color: 'white', letterSpacing: '0.05em' }}>
-              P180
-            </span>
-          </div>
+          <P180Logo size="sm" />
         </a>
 
-        {/* Nav items */}
+        {/* Nav items — 4 onglets */}
         <nav style={{ display: 'flex', gap: 4 }}>
           {navItems.map(item => (
             <a key={item.href} href={item.href} style={{
@@ -57,8 +56,8 @@ export const TopBar = memo(function TopBar({ jourX, daysLeft, daysPct, firstName
               letterSpacing: '0.12em',
               textTransform: 'uppercase' as const,
               textDecoration: 'none',
-              color: item.active ? C.text : C.muted,
-              background: item.active ? C.dimmed : 'transparent',
+              color: item.active ? C.accent : C.muted,
+              background: item.active ? 'rgba(58,134,255,0.12)' : 'transparent',
               borderRadius: 8,
               transition: 'all 0.15s',
             }}>
@@ -88,7 +87,7 @@ export const TopBar = memo(function TopBar({ jourX, daysLeft, daysPct, firstName
         </div>
       </div>
 
-      {/* Jour X / 180 — centered, prominent */}
+      {/* Jour X / 180 — centered, prominent with days left in blue */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         gap: 8,
@@ -100,13 +99,13 @@ export const TopBar = memo(function TopBar({ jourX, daysLeft, daysPct, firstName
         <span style={{ ...M, fontSize: '13px', color: C.muted, lineHeight: 1 }}>
           / 180
         </span>
-        <span style={{ ...M, fontSize: '11px', color: C.muted, marginLeft: 6, lineHeight: 1 }}>
-          — {daysLeft}j restants
+        <span style={{ ...M, fontSize: '13px', color: C.accent, fontWeight: 700, marginLeft: 6, lineHeight: 1 }}>
+          {daysLeft}j restants
         </span>
       </div>
 
       {/* Progress bar */}
-      <div style={{ height: 2, background: C.dimmed }}>
+      <div style={{ height: 3, background: C.dimmed }}>
         <div style={{
           height: '100%',
           width: `${daysPct}%`,

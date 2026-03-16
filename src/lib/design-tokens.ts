@@ -15,6 +15,8 @@ export const C = {
   green:   '#15803D',
   greenL:  '#22C55E',
   gold:    '#C9A84C',
+  orange:  '#FFA500',
+  orangeBg: 'rgba(255,165,0,0.12)',
 } as const
 
 /** Barlow Condensed — titres, labels, boutons */

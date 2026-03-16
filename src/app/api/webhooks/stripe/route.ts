@@ -70,8 +70,8 @@ export async function POST(request: NextRequest) {
     await supabase.from('programs').insert({ client_id: userId, content: [] })
     await supabase.from('gamification').insert({ client_id: userId })
     await supabase.from('todos').insert([
-      { client_id: userId, title: 'Partage to-do validée', is_system: true },
-      { client_id: userId, title: 'Prépa to-do de demain', is_system: true },
+      { client_id: userId, title: 'Préparer to-do de demain', is_system: true, day_of_week: null },
+      { client_id: userId, title: 'Poster wins de la semaine', is_system: true, day_of_week: 0 },
     ])
 
     await sendWelcomeEmail(email, firstName, tempPassword)

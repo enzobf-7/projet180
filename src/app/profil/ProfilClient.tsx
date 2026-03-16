@@ -22,6 +22,13 @@ interface WeeklyReport {
   submitted_at:     string
 }
 
+interface Win {
+  id:          string
+  content:     string
+  week_number: number
+  created_at:  string
+}
+
 interface Props {
   jourX:          number
   email:          string
@@ -29,6 +36,7 @@ interface Props {
   gamification:   Gamification
   onboardingDate: string | null
   weeklyReports:  WeeklyReport[]
+  wins:           Win[]
 }
 
 import { LEVELS, getCurrentLevel, getLevelProgress } from '@/lib/levels'
@@ -107,7 +115,7 @@ const SCORE_FIELDS = [
   { key: 'score_social',   label: 'Social' },
 ]
 
-export default function ProfilClient({ jourX, email, responses, gamification, onboardingDate, weeklyReports }: Props) {
+export default function ProfilClient({ jourX, email, responses, gamification, onboardingDate, weeklyReports, wins }: Props) {
   const router = useRouter()
   const [activeSection, setActiveSection] = useState(0)
   const [signOutLoading, setSignOutLoading] = useState(false)
@@ -124,6 +132,7 @@ export default function ProfilClient({ jourX, email, responses, gamification, on
   const navItems = [
     { label: 'Dashboard',  href: '/dashboard',  active: false },
     { label: 'Programme',  href: '/programme',  active: false },
+    { label: 'Classement', href: '/classement', active: false },
     { label: 'Profil',     href: '/profil',     active: true  },
   ]
 
@@ -142,6 +151,18 @@ export default function ProfilClient({ jourX, email, responses, gamification, on
   }
 
   const daysLeft = 180 - jourX
+
+  // Group wins by week_number
+  const winsByWeek: Map<number, Win[]> = new Map()
+  for (const w of wins) {
+    const existing = winsByWeek.get(w.week_number)
+    if (existing) {
+      existing.push(w)
+    } else {
+      winsByWeek.set(w.week_number, [w])
+    }
+  }
+  const winWeeks = Array.from(winsByWeek.entries()).sort((a, b) => b[0] - a[0])
 
   return (
     <div style={{ minHeight: '100vh', background: C.bg, color: C.text }}>
@@ -347,6 +368,166 @@ export default function ProfilClient({ jourX, email, responses, gamification, on
             </div>
           )}
 
+          {/* ── Bilan hebdomadaire IA ─────────────────────────────────────── */}
+          <div style={{ background: C.surface, border: `1px solid ${C.border}`, marginBottom: 32 }}>
+            <div style={{ padding: '20px 28px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', flexWrap: 'wrap' as const, gap: 8 }}>
+              <h2 style={{ ...D, fontWeight: 700, fontSize: '18px', letterSpacing: '0.05em', textTransform: 'uppercase' as const, color: C.text, margin: 0 }}>
+                Bilan hebdomadaire IA
+              </h2>
+              <span style={{ ...M, fontSize: '10px', color: C.muted }}>
+                Généré automatiquement chaque lundi
+              </span>
+            </div>
+
+            {weeklyReports.length === 0 ? (
+              <div style={{ padding: '32px 28px', ...D, fontWeight: 700, fontSize: '13px', letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: C.muted }}>
+                Aucun bilan disponible pour l&apos;instant
+              </div>
+            ) : (
+              <div style={{ padding: '20px 28px', display: 'flex', flexDirection: 'column' as const, gap: 16 }}>
+                {weeklyReports.map(report => {
+                  const stats = report.responses ?? {}
+                  const habitPct   = typeof stats.habit_completion_pct === 'number' ? stats.habit_completion_pct : null
+                  const xp         = typeof stats.xp_total === 'number' ? stats.xp_total : null
+                  const streak     = typeof stats.streak === 'number' ? stats.streak : null
+                  const motiv      = report.motivation_score
+                  const aiSummary  = typeof stats.ai_summary === 'string' && stats.ai_summary.trim() ? stats.ai_summary.trim() : null
+                  const reportDate = new Date(report.submitted_at)
+                  const weekLabel  = `Semaine ${report.week_number}`
+                  const dateLabel  = fmt(reportDate)
+
+                  return (
+                    <div
+                      key={report.id}
+                      style={{
+                        background: C.bg,
+                        border: `1px solid ${C.border}`,
+                        padding: '18px 22px',
+                        display: 'flex',
+                        flexDirection: 'column' as const,
+                        gap: 14,
+                      }}
+                    >
+                      {/* Header */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' as const, gap: 8 }}>
+                        <div>
+                          <span style={{ ...D, fontWeight: 800, fontSize: '16px', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: C.text }}>
+                            {weekLabel}
+                          </span>
+                          <span style={{ ...M, fontSize: '11px', color: C.muted, marginLeft: 12 }}>
+                            {dateLabel}
+                          </span>
+                        </div>
+                        {motiv !== null && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span style={{ ...D, fontWeight: 700, fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase' as const, color: C.muted }}>
+                              Motivation
+                            </span>
+                            <span
+                              style={{
+                                ...D, fontWeight: 800, fontSize: '15px',
+                                color: motiv >= 7 ? C.green : motiv >= 4 ? C.gold : '#E05252',
+                              }}
+                            >
+                              {motiv}/10
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Stats row */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+                        {[
+                          { label: 'Habits', value: habitPct !== null ? `${habitPct}%` : '—' },
+                          { label: 'XP semaine', value: xp !== null ? `+${xp}` : '—' },
+                          { label: 'Streak', value: streak !== null ? `${streak}j` : '—' },
+                        ].map(({ label, value }) => (
+                          <div
+                            key={label}
+                            style={{
+                              background: C.surface,
+                              border: `1px solid ${C.border}`,
+                              padding: '10px 14px',
+                            }}
+                          >
+                            <div style={{ ...D, fontWeight: 700, fontSize: '9px', letterSpacing: '0.2em', textTransform: 'uppercase' as const, color: C.muted, marginBottom: 4 }}>
+                              {label}
+                            </div>
+                            <div style={{ ...D, fontWeight: 800, fontSize: '20px', letterSpacing: '0.04em', color: C.text }}>
+                              {value}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* AI summary */}
+                      {aiSummary && (
+                        <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 14 }}>
+                          <div style={{ ...D, fontWeight: 700, fontSize: '9px', letterSpacing: '0.2em', textTransform: 'uppercase' as const, color: C.muted, marginBottom: 8 }}>
+                            Analyse IA
+                          </div>
+                          <p style={{ ...M, fontSize: '13px', color: C.text, lineHeight: 1.7, margin: 0, fontStyle: 'italic' }}>
+                            {aiSummary}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* ── Compilation des wins ──────────────────────────────────────── */}
+          <div style={{ background: C.surface, border: `1px solid ${C.border}`, marginBottom: 32 }}>
+            <div style={{ padding: '20px 28px', borderBottom: `1px solid ${C.border}` }}>
+              <h2 style={{ ...D, fontWeight: 700, fontSize: '18px', letterSpacing: '0.05em', textTransform: 'uppercase' as const, color: C.text, margin: 0 }}>
+                Compilation des wins
+              </h2>
+            </div>
+
+            {winWeeks.length === 0 ? (
+              <div style={{ padding: '32px 28px', ...D, fontWeight: 700, fontSize: '13px', letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: C.muted }}>
+                Aucun win posté pour l&apos;instant
+              </div>
+            ) : (
+              <div style={{ padding: '20px 28px', display: 'flex', flexDirection: 'column' as const, gap: 20 }}>
+                {winWeeks.map(([weekNum, weekWins]) => (
+                  <div key={weekNum}>
+                    <div style={{
+                      ...D, fontWeight: 800, fontSize: '14px', letterSpacing: '0.08em',
+                      textTransform: 'uppercase' as const, color: C.text, marginBottom: 10,
+                    }}>
+                      Semaine {weekNum}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+                      {weekWins.map(win => (
+                        <div
+                          key={win.id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: 10,
+                            padding: '10px 14px',
+                            background: C.bg,
+                            border: `1px solid ${C.border}`,
+                          }}
+                        >
+                          <span style={{ ...D, fontSize: '14px', color: C.greenL, flexShrink: 0, lineHeight: 1.5 }}>
+                            ◆
+                          </span>
+                          <span style={{ ...M, fontSize: '13px', color: C.text, lineHeight: 1.5 }}>
+                            {win.content}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* ── Questionnaire (accordéon) ─────────────────────────────────── */}
           <details style={{ background: C.surface, border: `1px solid ${C.border}` }}>
             <summary style={{
@@ -415,113 +596,6 @@ export default function ProfilClient({ jourX, email, responses, gamification, on
               )}
             </div>
           </details>
-
-        {/* ── Weekly Reports ────────────────────────────────────────────────── */}
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, marginTop: 24 }}>
-          <div style={{ padding: '20px 28px', borderBottom: `1px solid ${C.border}` }}>
-            <h2 style={{ ...D, fontWeight: 700, fontSize: '18px', letterSpacing: '0.05em', textTransform: 'uppercase' as const, color: C.text, margin: 0 }}>
-              Bilans hebdomadaires
-            </h2>
-          </div>
-
-          {weeklyReports.length === 0 ? (
-            <div style={{ padding: '32px 28px', ...D, fontWeight: 700, fontSize: '13px', letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: C.muted }}>
-              Aucun bilan disponible pour l'instant
-            </div>
-          ) : (
-            <div style={{ padding: '20px 28px', display: 'flex', flexDirection: 'column' as const, gap: 16 }}>
-              {weeklyReports.map(report => {
-                const stats = report.responses ?? {}
-                const habitPct   = typeof stats.habit_completion_pct === 'number' ? stats.habit_completion_pct : null
-                const xp         = typeof stats.xp_total === 'number' ? stats.xp_total : null
-                const streak     = typeof stats.streak === 'number' ? stats.streak : null
-                const motiv      = report.motivation_score
-                const aiSummary  = typeof stats.ai_summary === 'string' && stats.ai_summary.trim() ? stats.ai_summary.trim() : null
-                const reportDate = new Date(report.submitted_at)
-                const weekLabel  = `Semaine ${report.week_number}`
-                const dateLabel  = fmt(reportDate)
-
-                return (
-                  <div
-                    key={report.id}
-                    style={{
-                      background: C.bg,
-                      border: `1px solid ${C.border}`,
-                      padding: '18px 22px',
-                      display: 'flex',
-                      flexDirection: 'column' as const,
-                      gap: 14,
-                    }}
-                  >
-                    {/* Header */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' as const, gap: 8 }}>
-                      <div>
-                        <span style={{ ...D, fontWeight: 800, fontSize: '16px', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: C.text }}>
-                          {weekLabel}
-                        </span>
-                        <span style={{ ...M, fontSize: '11px', color: C.muted, marginLeft: 12 }}>
-                          {dateLabel}
-                        </span>
-                      </div>
-                      {motiv !== null && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span style={{ ...D, fontWeight: 700, fontSize: '10px', letterSpacing: '0.15em', textTransform: 'uppercase' as const, color: C.muted }}>
-                            Motivation
-                          </span>
-                          <span
-                            style={{
-                              ...D, fontWeight: 800, fontSize: '15px',
-                              color: motiv >= 7 ? C.green : motiv >= 4 ? C.gold : '#E05252',
-                            }}
-                          >
-                            {motiv}/10
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Stats row */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-                      {[
-                        { label: 'Habits', value: habitPct !== null ? `${habitPct}%` : '—' },
-                        { label: 'XP semaine', value: xp !== null ? `+${xp}` : '—' },
-                        { label: 'Streak', value: streak !== null ? `${streak}j` : '—' },
-                      ].map(({ label, value }) => (
-                        <div
-                          key={label}
-                          style={{
-                            background: C.surface,
-                            border: `1px solid ${C.border}`,
-                            padding: '10px 14px',
-                          }}
-                        >
-                          <div style={{ ...D, fontWeight: 700, fontSize: '9px', letterSpacing: '0.2em', textTransform: 'uppercase' as const, color: C.muted, marginBottom: 4 }}>
-                            {label}
-                          </div>
-                          <div style={{ ...D, fontWeight: 800, fontSize: '20px', letterSpacing: '0.04em', color: C.text }}>
-                            {value}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* AI summary */}
-                    {aiSummary && (
-                      <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 14 }}>
-                        <div style={{ ...D, fontWeight: 700, fontSize: '9px', letterSpacing: '0.2em', textTransform: 'uppercase' as const, color: C.muted, marginBottom: 8 }}>
-                          Analyse Robin
-                        </div>
-                        <p style={{ ...M, fontSize: '13px', color: C.text, lineHeight: 1.7, margin: 0, fontStyle: 'italic' }}>
-                          {aiSummary}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
 
         </div>
       </main>
