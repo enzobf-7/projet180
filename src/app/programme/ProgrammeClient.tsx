@@ -31,12 +31,12 @@ interface Props {
 
 // ─── Phases ───────────────────────────────────────────────────────────────────
 const PHASES = [
-  { phase: 1, label: 'Fondations',    weeks: [1,2,3,4],              days: '1–28'    },
-  { phase: 2, label: 'Acceleration',  weeks: [5,6,7,8],              days: '29–56'   },
-  { phase: 3, label: 'Consolidation', weeks: [9,10,11,12],           days: '57–84'   },
-  { phase: 4, label: 'Maitrise',      weeks: [13,14,15,16],          days: '85–112'  },
-  { phase: 5, label: 'Optimisation',  weeks: [17,18,19,20],          days: '113–140' },
-  { phase: 6, label: 'Excellence',    weeks: [21,22,23,24,25,26],    days: '141–180' },
+  { phase: 1, label: 'Destruction',    weeks: [1,2,3,4],            days: '1–30'    },
+  { phase: 2, label: 'Fondation',      weeks: [5,6,7,8,9],          days: '31–60'   },
+  { phase: 3, label: 'Ignition',       weeks: [10,11,12,13],        days: '61–90'   },
+  { phase: 4, label: 'Accélération',   weeks: [14,15,16,17],        days: '91–120'  },
+  { phase: 5, label: 'Domination',     weeks: [18,19,20,21],        days: '121–150' },
+  { phase: 6, label: 'Transcendance',  weeks: [22,23,24,25,26],     days: '151–180' },
 ]
 
 // ─── Main component ───────────────────────────────────────────────────────────

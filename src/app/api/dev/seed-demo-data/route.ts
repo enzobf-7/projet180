@@ -127,12 +127,12 @@ export async function POST() {
 
   // Seed program_content
   await supabase.from('program_content').upsert([
-    { phase_number: 1, week_number: 1, title: 'Fondations', objectives: 'Installer les habitudes de base. Comprendre le framework 180j.', focus_text: 'Discipline quotidienne', robin_notes: 'Concentre-toi sur la régularité, pas la perfection.' },
-    { phase_number: 1, week_number: 2, title: 'Routine matinale', objectives: 'Créer ta routine matinale optimale. Cold shower + sport.', focus_text: 'Morning routine', robin_notes: 'Le matin définit ta journée.' },
-    { phase_number: 1, week_number: 3, title: 'Mindset', objectives: 'Identifier tes croyances limitantes. Journal de gratitude.', focus_text: 'Mental shift', robin_notes: 'Tes pensées créent ta réalité.' },
-    { phase_number: 1, week_number: 4, title: 'Bilan Phase 1', objectives: 'Auto-évaluation. Ajuster les habitudes. Premier call coaching.', focus_text: 'Review & adjust', robin_notes: 'On fait le point ensemble.' },
-    { phase_number: 2, week_number: 5, title: 'Accélération', objectives: 'Augmenter l\'intensité. Lancer le side project.', focus_text: 'Level up', robin_notes: 'C\'est maintenant que ça commence vraiment.' },
-    { phase_number: 2, week_number: 6, title: 'Social skills', objectives: 'Challenge social. Sortir de ta zone de confort.', focus_text: 'Connexions', robin_notes: 'Parle à des inconnus. Chaque jour.' },
+    { phase_number: 1, week_number: 1, title: 'Destruction — Semaine 1', objectives: 'Casser les anciennes habitudes. Identifier ce qui te freine.', focus_text: 'Table rase', robin_notes: 'On détruit pour mieux reconstruire.' },
+    { phase_number: 1, week_number: 2, title: 'Destruction — Semaine 2', objectives: 'Cold shower + sport. Sortir de la zone de confort.', focus_text: 'Inconfort', robin_notes: 'Le confort est l\'ennemi.' },
+    { phase_number: 1, week_number: 3, title: 'Destruction — Semaine 3', objectives: 'Identifier tes croyances limitantes. Les détruire une par une.', focus_text: 'Mental shift', robin_notes: 'Tes pensées créent ta réalité.' },
+    { phase_number: 1, week_number: 4, title: 'Destruction — Bilan', objectives: 'Auto-évaluation. Premier call coaching.', focus_text: 'Review', robin_notes: 'On fait le point ensemble.' },
+    { phase_number: 2, week_number: 5, title: 'Fondation — Semaine 1', objectives: 'Installer les habitudes de base. Routine matinale.', focus_text: 'Discipline', robin_notes: 'Concentre-toi sur la régularité.' },
+    { phase_number: 2, week_number: 6, title: 'Fondation — Semaine 2', objectives: 'Challenge social. Sortir de ta zone de confort.', focus_text: 'Connexions', robin_notes: 'Parle à des inconnus. Chaque jour.' },
   ], { onConflict: 'phase_number,week_number' })
 
   // Set Robin's WhatsApp in settings

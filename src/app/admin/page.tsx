@@ -176,12 +176,12 @@ export default function AdminPage() {
 
   // ────────── Load programme content ──────────
   const PHASES = [
-    { num: 1, name: 'FONDATIONS', weeks: [1, 2, 3, 4] },
-    { num: 2, name: 'CONSTRUCTION', weeks: [5, 6, 7, 8, 9, 10, 11, 12, 13] },
-    { num: 3, name: 'CONSOLIDATION', weeks: [14, 15, 16, 17, 18] },
-    { num: 4, name: 'EXPANSION', weeks: [19, 20, 21, 22] },
-    { num: 5, name: 'MAÎTRISE', weeks: [23, 24, 25] },
-    { num: 6, name: 'LE 180', weeks: [26] },
+    { num: 1, name: 'DESTRUCTION', weeks: [1, 2, 3, 4] },
+    { num: 2, name: 'FONDATION', weeks: [5, 6, 7, 8, 9] },
+    { num: 3, name: 'IGNITION', weeks: [10, 11, 12, 13] },
+    { num: 4, name: 'ACCÉLÉRATION', weeks: [14, 15, 16, 17] },
+    { num: 5, name: 'DOMINATION', weeks: [18, 19, 20, 21] },
+    { num: 6, name: 'TRANSCENDANCE', weeks: [22, 23, 24, 25, 26] },
   ]
 
   const loadProgramContent = useCallback(async () => {
