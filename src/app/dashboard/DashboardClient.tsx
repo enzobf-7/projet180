@@ -18,6 +18,7 @@ import {
   DailyCard,
   ProgressionPanel,
   WinsCard,
+  WelcomeOverlay,
 } from './components'
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -194,10 +195,10 @@ export default function DashboardClient({
     { key: 'week_fire',    label: 'Semaine de feu',    icon: '🔥', earned: streak >= 7,    desc: '7 jours de série',      target: 7,     current: Math.min(streak, 7),   unit: 'j' },
     { key: 'fortnight',    label: 'Quinzaine',         icon: '⚔',  earned: streak >= 14,   desc: '14 jours de série',     target: 14,    current: Math.min(streak, 14),  unit: 'j' },
     { key: 'month_king',   label: 'Mois entier',       icon: '👑', earned: record >= 30,   desc: '30 jours de série',     target: 30,    current: Math.min(record, 30),  unit: 'j' },
-    { key: 'soldier',      label: 'Soldat',            icon: '🛡',  earned: xp >= 500,      desc: '500 XP cumulés',        target: 500,   current: Math.min(xp, 500),     unit: 'XP' },
-    { key: 'warrior',      label: 'Guerrier',          icon: '⚔',  earned: xp >= 1500,     desc: '1 500 XP cumulés',      target: 1500,  current: Math.min(xp, 1500),    unit: 'XP' },
-    { key: 'fighter',      label: 'Combattant',        icon: '💎', earned: xp >= 3000,     desc: '3 000 XP cumulés',      target: 3000,  current: Math.min(xp, 3000),    unit: 'XP' },
-    { key: 'honor',        label: "Homme d'honneur",   icon: '🏆', earned: xp >= 6000,     desc: '6 000 XP cumulés',      target: 6000,  current: Math.min(xp, 6000),    unit: 'XP' },
+    { key: 'eveille',      label: "L'Éveillé",         icon: '🛡',  earned: xp >= 500,      desc: 'Atteindre le niveau 2',  target: 500,   current: Math.min(xp, 500),     unit: 'XP' },
+    { key: 'batisseur',    label: 'Le Bâtisseur',      icon: '⚔',  earned: xp >= 1500,     desc: 'Atteindre le niveau 3',  target: 1500,  current: Math.min(xp, 1500),    unit: 'XP' },
+    { key: 'souverain',    label: 'Le Souverain',      icon: '💎', earned: xp >= 3000,     desc: 'Atteindre le niveau 4',  target: 3000,  current: Math.min(xp, 3000),    unit: 'XP' },
+    { key: 'bascule',      label: 'Le Point de Bascule', icon: '🏆', earned: xp >= 6000,   desc: 'Atteindre le niveau 5',  target: 6000,  current: Math.min(xp, 6000),    unit: 'XP' },
   ]
   const earnedCount = BADGES.filter(b => b.earned).length
 
@@ -240,6 +241,7 @@ export default function DashboardClient({
       <DashboardAnimations />
       <XPParticles particles={particles} isMobile={isMobile} />
       {levelUpOverlay && <LevelUpOverlay levelName={levelUpOverlay} />}
+      <WelcomeOverlay />
 
       <TopBar
         jourX={jourX}

@@ -59,7 +59,7 @@ export const ProgressionPanel = memo(function ProgressionPanel({
         animationDelay: '0.05s',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-          <div style={{ ...D, fontWeight: 800, fontSize: '13px', letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: C.text }}>
+          <div style={{ ...D, fontWeight: 800, fontSize: '15px', letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: C.text }}>
             Série en cours
           </div>
           <div style={{
@@ -86,11 +86,11 @@ export const ProgressionPanel = memo(function ProgressionPanel({
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
           {STREAK_MILESTONES.map(m => (
             <div key={m.days} style={{ flex: 1, textAlign: 'center' }}>
-              <div style={{ ...M, fontSize: '9px', color: streak >= m.days ? C.text : C.muted, fontWeight: 700 }}>
+              <div style={{ ...M, fontSize: '11px', color: streak >= m.days ? C.text : C.muted, fontWeight: 700 }}>
                 {m.days}j
               </div>
               {m.multiplier && (
-                <div style={{ ...M, fontSize: '7px', color: streak >= m.days ? C.accent : C.muted, marginTop: 1 }}>
+                <div style={{ ...M, fontSize: '9px', color: streak >= m.days ? C.accent : C.muted, marginTop: 1 }}>
                   {m.multiplier}
                 </div>
               )}
@@ -105,10 +105,10 @@ export const ProgressionPanel = memo(function ProgressionPanel({
             background: C.bg, borderRadius: 8,
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
           }}>
-            <span style={{ ...D, fontWeight: 600, fontSize: '11px', color: C.muted, letterSpacing: '0.06em', textTransform: 'uppercase' as const }}>
+            <span style={{ ...D, fontWeight: 600, fontSize: '13px', color: C.muted, letterSpacing: '0.06em', textTransform: 'uppercase' as const }}>
               Prochain palier
             </span>
-            <span style={{ ...M, fontWeight: 700, fontSize: '12px', color: C.accent }}>
+            <span style={{ ...M, fontWeight: 700, fontSize: '14px', color: C.accent }}>
               dans {daysToNext}j
             </span>
           </div>
@@ -124,15 +124,15 @@ export const ProgressionPanel = memo(function ProgressionPanel({
         animationDelay: '0.1s',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-          <div style={{ ...D, fontWeight: 800, fontSize: '13px', letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: C.text }}>
+          <div style={{ ...D, fontWeight: 800, fontSize: '15px', letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: C.text }}>
             Badges
           </div>
-          <span style={{ ...M, fontSize: '10px', color: C.muted }}>{earnedCount}/{badges.length}</span>
+          <span style={{ ...M, fontSize: '12px', color: C.muted }}>{earnedCount}/{badges.length}</span>
         </div>
 
         {/* Streak badges */}
         <div style={{ marginBottom: 14 }}>
-          <div style={{ ...D, fontWeight: 700, fontSize: '9px', letterSpacing: '0.2em', color: C.muted, textTransform: 'uppercase' as const, marginBottom: 8 }}>
+          <div style={{ ...D, fontWeight: 700, fontSize: '11px', letterSpacing: '0.2em', color: C.muted, textTransform: 'uppercase' as const, marginBottom: 8 }}>
             Badges de série
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -146,7 +146,7 @@ export const ProgressionPanel = memo(function ProgressionPanel({
 
         {/* XP badges */}
         <div>
-          <div style={{ ...D, fontWeight: 700, fontSize: '9px', letterSpacing: '0.2em', color: C.muted, textTransform: 'uppercase' as const, marginBottom: 8 }}>
+          <div style={{ ...D, fontWeight: 700, fontSize: '11px', letterSpacing: '0.2em', color: C.muted, textTransform: 'uppercase' as const, marginBottom: 8 }}>
             Badges d&apos;XP
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -234,7 +234,7 @@ function BadgeRow({ badge: b }: { badge: Badge }) {
       </span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
-          <span style={{ ...D, fontWeight: 700, fontSize: '12px', color: b.earned ? C.text : C.muted, letterSpacing: '0.04em' }}>
+          <span style={{ ...D, fontWeight: 700, fontSize: '14px', color: b.earned ? C.text : C.muted, letterSpacing: '0.04em' }}>
             {b.label}
           </span>
           {b.earned ? (
@@ -245,7 +245,7 @@ function BadgeRow({ badge: b }: { badge: Badge }) {
             </span>
           )}
         </div>
-        <div style={{ ...M, fontSize: '9px', color: C.muted, marginTop: 2 }}>
+        <div style={{ ...M, fontSize: '11px', color: C.muted, marginTop: 2 }}>
           {b.desc}
         </div>
         {!b.earned && (

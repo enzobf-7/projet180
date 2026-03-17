@@ -56,7 +56,7 @@ export const TopBar = memo(function TopBar({ jourX, daysLeft, daysPct, firstName
               letterSpacing: '0.12em',
               textTransform: 'uppercase' as const,
               textDecoration: 'none',
-              color: item.active ? C.accent : C.muted,
+              color: C.accent,
               background: item.active ? 'rgba(58,134,255,0.12)' : 'transparent',
               borderRadius: 8,
               transition: 'all 0.15s',
@@ -96,10 +96,10 @@ export const TopBar = memo(function TopBar({ jourX, daysLeft, daysPct, firstName
         <span style={{ ...D, fontWeight: 900, fontSize: '24px', letterSpacing: '0.06em', color: C.text, lineHeight: 1 }}>
           JOUR {jourX}
         </span>
-        <span style={{ ...M, fontSize: '13px', color: C.muted, lineHeight: 1 }}>
+        <span style={{ ...M, fontSize: '24px', color: C.muted, fontWeight: 900, lineHeight: 1 }}>
           / 180
         </span>
-        <span style={{ ...M, fontSize: '13px', color: C.accent, fontWeight: 700, marginLeft: 6, lineHeight: 1 }}>
+        <span style={{ ...M, fontSize: '24px', color: C.accent, fontWeight: 900, marginLeft: 8, lineHeight: 1 }}>
           {daysLeft}j restants
         </span>
       </div>

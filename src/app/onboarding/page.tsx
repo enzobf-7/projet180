@@ -458,7 +458,7 @@ function Step1Contract({
       </div>
 
       {/* Bloc signature regroupé */}
-      <div className="rounded-xl p-6 space-y-6" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
+      <div className="rounded-xl p-6 space-y-6 text-center" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
 
         {/* Texte légal */}
         <p className="text-base font-medium uppercase tracking-wider" style={{ ...D, color: C.text }}>
@@ -466,8 +466,8 @@ function Step1Contract({
         </p>
 
         {/* Acceptance checkbox */}
-        <label className="flex items-start gap-3 cursor-pointer group">
-          <div className="relative mt-0.5">
+        <label className="flex items-center gap-3 cursor-pointer group justify-center">
+          <div className="relative">
             <input
               type="checkbox"
               checked={accepted}
@@ -487,12 +487,17 @@ function Step1Contract({
         </label>
 
         {/* Signature input */}
-        <div className="max-w-xs mx-auto">
-          <P180Input
+        <div className="max-w-sm mx-auto space-y-2">
+          <label className="block text-base font-medium uppercase tracking-wider text-center" style={{ ...D, color: C.muted }}>
+            Signature
+          </label>
+          <input
+            type="text"
             value={signatureName}
             onChange={e => onSignatureNameChange(e.target.value)}
             placeholder="PRÉNOM NOM"
-            className="text-center uppercase tracking-wider"
+            className="w-full px-4 py-3 rounded-xl text-center uppercase tracking-wider text-base font-medium focus:outline-none transition-all"
+            style={{ ...D, background: C.bg, border: `1px solid ${C.border}`, color: C.text }}
           />
         </div>
 
@@ -742,13 +747,15 @@ function Step3Link({
         subtitle={description}
       />
 
-      <div className="rounded-xl border border-[#1E1E1E] bg-[#0F0F0F] p-6 text-center space-y-4">
+      <div className="rounded-xl p-6 text-center space-y-4" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
         <div className="text-7xl">{icon}</div>
-        <p className="text-[#484848] text-base leading-relaxed uppercase tracking-wider" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>{details ?? description}</p>
-        <P180Button onClick={onConfirm} fullWidth>
-          {hasLink ? `${cta} →` : 'Passer cette étape →'}
-        </P180Button>
-        <p className="text-sm text-[#484848] uppercase tracking-wider" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+        <p className="text-base leading-relaxed uppercase tracking-wider" style={{ ...D, color: C.muted }}>{details ?? description}</p>
+        <div className="max-w-md mx-auto">
+          <P180Button onClick={onConfirm} fullWidth>
+            {hasLink ? `${cta} →` : 'Passer cette étape →'}
+          </P180Button>
+        </div>
+        <p className="text-base leading-relaxed uppercase tracking-wider" style={{ ...D, color: C.muted }}>
           {hasLink
             ? "Le lien s'ouvre dans un nouvel onglet. Cette étape sera automatiquement validée."
             : "Le lien n'est pas encore configuré par Robin. Tu peux passer pour l'instant."}
@@ -791,26 +798,28 @@ function Step5Call({
       />
 
       {!unlocked ? (
-        <div className="rounded-xl border border-[#1E1E1E] bg-[#0F0F0F] p-8 text-center space-y-4">
-          <p className="text-[#484848] text-base uppercase tracking-wider" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>Complete les étapes 1 à 4 pour débloquer la réservation.</p>
+        <div className="rounded-xl p-8 text-center space-y-4" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
+          <p className="text-base uppercase tracking-wider" style={{ ...D, color: C.muted }}>Complete les étapes 1 à 4 pour débloquer la réservation.</p>
           <div className="space-y-2 text-left mt-4">
             {['Contrat signé', 'Questionnaire rempli', 'WhatsApp rejoint', 'Skool rejoint'].map((l, i) => (
-              <p key={i} className="text-sm text-[#484848] flex items-center gap-2 uppercase tracking-wider" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-                <span className="text-[#3A86FF]">→</span> {l}
+              <p key={i} className="text-base flex items-center gap-2 uppercase tracking-wider" style={{ ...D, color: C.muted }}>
+                <span style={{ color: C.accent }}>→</span> {l}
               </p>
             ))}
           </div>
         </div>
       ) : (
-        <div className="rounded-xl border border-[#3A86FF]/30 bg-[#3A86FF]/5 p-6 text-center space-y-4">
+        <div className="rounded-xl p-6 text-center space-y-4" style={{ background: 'rgba(58,134,255,0.05)', border: `1px solid rgba(58,134,255,0.3)` }}>
           <div className="text-6xl">📞</div>
-          <p className="text-[#F5F5F5] text-base font-medium uppercase tracking-wider" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>Tu y es. Robin t'attend.</p>
-          <p className="text-[#484848] text-base leading-relaxed uppercase tracking-wider" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+          <p className="text-base font-medium uppercase tracking-wider" style={{ ...D, color: C.text }}>Tu y es. Robin t'attend.</p>
+          <p className="text-base leading-relaxed uppercase tracking-wider" style={{ ...D, color: C.muted }}>
             Choisis le créneau qui te convient. Ce call de démarrage est le point de lancement de ta transformation.
           </p>
-          <P180Button onClick={onBook} fullWidth>
-            Réserver mon call →
-          </P180Button>
+          <div className="max-w-md mx-auto">
+            <P180Button onClick={onBook} fullWidth>
+              Réserver mon call →
+            </P180Button>
+          </div>
         </div>
       )}
     </div>

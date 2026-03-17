@@ -7,7 +7,7 @@ export const C = {
   surface: '#0F0F0F',
   sidebar: '#0A0A0A',
   border:  '#1E1E1E',
-  muted:   '#484848',
+  muted:   '#6B6B6B',
   dimmed:  '#161616',
   text:    '#F0F0F0',
   accent:  '#3A86FF',
