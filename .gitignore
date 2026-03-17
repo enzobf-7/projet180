@@ -36,6 +36,10 @@ yarn-error.log*
 # vercel
 .vercel
 
+# demo / presentation (pas du code app)
+demo-presentation.html
+email-preview.html
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

@@ -92,10 +92,9 @@ export const DailyCard = memo(function DailyCard({
         </div>
         <span style={{
           ...D, fontWeight: 600, fontSize: '14px', letterSpacing: '0.02em',
-          color: done ? C.muted : C.text,
-          textDecoration: done ? 'line-through' : 'none',
+          color: done ? C.greenL : C.text,
           textAlign: 'left',
-          transition: 'color 0.2s, text-decoration 0.2s',
+          transition: 'color 0.2s',
         }}>
           {h.name}
         </span>
@@ -130,8 +129,7 @@ export const DailyCard = memo(function DailyCard({
           </div>
           <span style={{
             ...D, fontWeight: 600, fontSize: '14px', letterSpacing: '0.02em',
-            color: isDone ? C.muted : C.text,
-            textDecoration: isDone ? 'line-through' : 'none',
+            color: isDone ? C.greenL : C.text,
             textAlign: 'left',
             flex: 1,
           }}>
@@ -240,8 +238,7 @@ export const DailyCard = memo(function DailyCard({
         </div>
         <span style={{
           ...D, fontWeight: 600, fontSize: '14px', letterSpacing: '0.02em',
-          color: pt.completed ? C.muted : C.text,
-          textDecoration: pt.completed ? 'line-through' : 'none',
+          color: pt.completed ? C.greenL : C.text,
           textAlign: 'left',
         }}>
           {pt.title}

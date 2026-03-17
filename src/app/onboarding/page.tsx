@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import P180Logo from '@/components/P180Logo'
 import { P180Button } from '@/components/P180Button'
+import { P180Input } from '@/components/P180Input'
+import { C, D } from '@/lib/design-tokens'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -438,7 +440,7 @@ function Step1Contract({
       />
 
       {/* PDF Viewer */}
-      <div className="rounded-xl border border-[#1E1E1E] overflow-hidden bg-[#0F0F0F]">
+      <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${C.border}`, background: C.surface }}>
         {pdfUrl ? (
           <iframe
             src={pdfUrl}
@@ -449,62 +451,62 @@ function Step1Contract({
         ) : (
           <div className="flex flex-col items-center justify-center py-24 px-4 text-center">
             <span className="text-7xl mb-6">📄</span>
-            <p className="text-[#484848] text-base font-medium uppercase tracking-wider" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>Le contrat n'a pas encore été uploadé par Robin.</p>
-            <p className="text-[#484848] text-base font-medium mt-2 uppercase tracking-wider" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>Il sera disponible très prochainement.</p>
+            <p className="text-base font-medium uppercase tracking-wider" style={{ ...D, color: C.muted }}>Le contrat n'a pas encore été uploadé par Robin.</p>
+            <p className="text-base font-medium mt-2 uppercase tracking-wider" style={{ ...D, color: C.muted }}>Il sera disponible très prochainement.</p>
           </div>
         )}
       </div>
 
-      <p className="text-center text-base font-medium text-[#F0F0F0] uppercase tracking-wider" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-        Ta signature — nom, date, heure — est enregistrée et constitue une preuve légale d'acceptation.
-      </p>
+      {/* Bloc signature regroupé */}
+      <div className="rounded-xl p-6 space-y-6" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
 
-      {/* Acceptance checkbox */}
-      <label className="flex items-start gap-3 cursor-pointer group justify-center">
-        <div className="relative mt-0.5">
-          <input
-            type="checkbox"
-            checked={accepted}
-            onChange={e => onAccept(e.target.checked)}
-            className="sr-only"
-          />
-          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
-            accepted ? 'bg-[#3A86FF] border-[#3A86FF]' : 'bg-transparent border-[#1E1E1E] group-hover:border-[#484848]'
-          }`}>
-            {accepted && <span className="text-white text-xs">✓</span>}
+        {/* Texte légal */}
+        <p className="text-base font-medium uppercase tracking-wider" style={{ ...D, color: C.text }}>
+          En cochant la case ci-dessous et en mettant ton Prénom et Nom, tu acceptes le contrat.
+        </p>
+
+        {/* Acceptance checkbox */}
+        <label className="flex items-start gap-3 cursor-pointer group">
+          <div className="relative mt-0.5">
+            <input
+              type="checkbox"
+              checked={accepted}
+              onChange={e => onAccept(e.target.checked)}
+              className="sr-only"
+            />
+            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all`} style={{
+              background: accepted ? C.accent : 'transparent',
+              borderColor: accepted ? C.accent : C.border,
+            }}>
+              {accepted && <span className="text-white text-xs">✓</span>}
+            </div>
           </div>
-        </div>
-        <span className="text-base font-medium text-[#F0F0F0] leading-relaxed uppercase tracking-wider" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-          J'ai lu et j'accepte les conditions générales du programme Projet180.
-        </span>
-      </label>
-
-      {/* Signature name input */}
-      <div className="space-y-2 flex flex-col items-center">
-        <label className="block text-base font-medium text-[#888888] uppercase tracking-wider mb-2 text-center" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
-          Signature — tape ton prénom et nom complet
+          <span className="text-base font-medium leading-relaxed uppercase tracking-wider" style={{ ...D, color: C.text }}>
+            J'ai lu et j'accepte les conditions générales du programme Projet180.
+          </span>
         </label>
-        <input
-          type="text"
-          value={signatureName}
-          onChange={e => onSignatureNameChange(e.target.value)}
-          placeholder="PRÉNOM NOM"
-          className="max-w-xs w-full bg-[#0F0F0F] border border-[#1E1E1E] rounded-xl px-4 py-3 text-base font-medium text-[#F5F5F5] placeholder-[#444444] focus:outline-none focus:border-[#3A86FF] focus:shadow-[0_0_0_3px_rgba(58,134,255,0.12)] transition-all text-center uppercase tracking-wider"
-          style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
-        />
-      </div>
 
-      {/* Sign button */}
-      <div className="flex justify-center">
-        <P180Button
-          onClick={onSign}
-          disabled={!accepted || !signatureName.trim()}
-          loading={loading}
-          className="text-base font-medium max-w-xs w-full uppercase tracking-wider"
-          style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
-        >
-          {loading ? 'Signature en cours…' : 'Signer le contrat'}
-        </P180Button>
+        {/* Signature input */}
+        <div className="max-w-xs mx-auto">
+          <P180Input
+            value={signatureName}
+            onChange={e => onSignatureNameChange(e.target.value)}
+            placeholder="PRÉNOM NOM"
+            className="text-center uppercase tracking-wider"
+          />
+        </div>
+
+        {/* Sign button */}
+        <div className="flex justify-center">
+          <P180Button
+            onClick={onSign}
+            disabled={!accepted || !signatureName.trim()}
+            loading={loading}
+            className="max-w-xs w-full"
+          >
+            {loading ? 'Signature en cours…' : 'Signer le contrat'}
+          </P180Button>
+        </div>
       </div>
     </div>
   )

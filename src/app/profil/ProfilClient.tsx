@@ -407,11 +407,11 @@ export default function ProfilClient({ jourX, email, responses, gamification, on
             </div>
           )}
 
-          {/* ── Bilan hebdomadaire IA ─────────────────────────────────────── */}
+          {/* ── Bilan hebdomadaire ──────────────────────────────────────── */}
           <div style={{ background: C.surface, border: `1px solid ${C.border}`, marginBottom: 32 }}>
             <div style={{ padding: '20px 28px', borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', flexWrap: 'wrap' as const, gap: 8 }}>
               <h2 style={{ ...D, fontWeight: 700, fontSize: '18px', letterSpacing: '0.05em', textTransform: 'uppercase' as const, color: C.text, margin: 0 }}>
-                Bilan hebdomadaire IA
+                Bilan hebdomadaire
               </h2>
               <span style={{ ...M, fontSize: '10px', color: C.muted }}>
                 Généré automatiquement chaque lundi

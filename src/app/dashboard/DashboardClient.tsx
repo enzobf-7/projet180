@@ -18,7 +18,6 @@ import {
   DailyCard,
   ProgressionPanel,
   WinsCard,
-  LeaderboardCard,
 } from './components'
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -209,8 +208,6 @@ export default function DashboardClient({
     { label: 'Profil',     href: '/profil',     active: false },
   ]
 
-  // Mini leaderboard top 3
-  const top3 = leaderboard.slice(0, 3)
 
   // ── Effects ───────────────────────────────────────────────────────────────
   const isFirstRun    = useRef(true)
@@ -386,46 +383,6 @@ export default function DashboardClient({
                 whatsappLink={null}
               />
 
-              {/* Mini classement top 3 */}
-              <div className="p180-fade p180-card" style={{
-                background: C.surface,
-                border: `1px solid ${C.border}`,
-                borderRadius: 14,
-                padding: '18px 20px',
-              }}>
-                <div style={{ ...D, fontWeight: 800, fontSize: '13px', letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: C.text, marginBottom: 12 }}>
-                  Top 3
-                </div>
-                {top3.map(entry => (
-                  <div key={entry.clientId} style={{
-                    display: 'flex', alignItems: 'center', gap: 10,
-                    padding: '6px 0',
-                    borderBottom: `1px solid ${C.border}`,
-                  }}>
-                    <span style={{ fontSize: '16px', width: 24, textAlign: 'center' }}>
-                      {['🥇', '🥈', '🥉'][entry.rank - 1]}
-                    </span>
-                    <span style={{
-                      ...D, fontWeight: entry.isMe ? 700 : 600, fontSize: '13px',
-                      color: entry.isMe ? C.accent : C.text,
-                      letterSpacing: '0.04em', flex: 1,
-                    }}>
-                      {entry.firstName}{entry.isMe ? ' (toi)' : ''}
-                    </span>
-                    <span style={{ ...M, fontSize: '11px', color: C.muted }}>
-                      {entry.xp.toLocaleString('fr-FR')} xp
-                    </span>
-                  </div>
-                ))}
-                <a href="/classement" style={{
-                  display: 'block', textAlign: 'center', marginTop: 12,
-                  ...D, fontWeight: 700, fontSize: '11px', letterSpacing: '0.15em',
-                  textTransform: 'uppercase' as const, color: C.accent,
-                  textDecoration: 'none',
-                }}>
-                  Voir tout →
-                </a>
-              </div>
             </div>
           </div>
 

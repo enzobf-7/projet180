@@ -38,21 +38,21 @@ export const TopBar = memo(function TopBar({ jourX, daysLeft, daysPct, firstName
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 20px',
-        height: 56,
+        height: 64,
       }}>
         {/* Logo */}
         <a href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', flexShrink: 0 }}>
-          <P180Logo size="sm" />
+          <P180Logo size="md" />
         </a>
 
         {/* Nav items — 4 onglets */}
         <nav style={{ display: 'flex', gap: 4 }}>
           {navItems.map(item => (
             <a key={item.href} href={item.href} style={{
-              padding: '8px 16px',
+              padding: '10px 20px',
               ...D,
               fontWeight: 700,
-              fontSize: '13px',
+              fontSize: '15px',
               letterSpacing: '0.12em',
               textTransform: 'uppercase' as const,
               textDecoration: 'none',
