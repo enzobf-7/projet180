@@ -250,6 +250,7 @@ export default function DashboardClient({
         firstName={firstName}
         navItems={navItems}
         onSignOut={handleSignOut}
+        onboardingDate={onboardingDate}
       />
 
       <main style={{

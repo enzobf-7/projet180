@@ -27,6 +27,7 @@ interface Props {
   firstName:      string
   gamification:   Gamification
   programContent: ProgramContentRow[]
+  onboardingDate: string | null
 }
 
 // ─── Phases ───────────────────────────────────────────────────────────────────
@@ -41,7 +42,7 @@ const PHASES = [
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function ProgrammeClient({
-  jourX, firstName, gamification, programContent,
+  jourX, firstName, gamification, programContent, onboardingDate,
 }: Props) {
   const router   = useRouter()
   const supabase = createClient()
@@ -81,6 +82,7 @@ export default function ProgrammeClient({
         firstName={firstName}
         navItems={navItems}
         onSignOut={handleSignOut}
+        onboardingDate={onboardingDate}
       />
 
       {/* ── Main ──────────────────────────────────────────────────────────────── */}

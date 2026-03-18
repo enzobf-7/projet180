@@ -43,6 +43,7 @@ export default async function ProgrammePage() {
         ?? { xp_total: 0, current_streak: 0, longest_streak: 0, level: 1 }
       }
       programContent={(programContent ?? []) as ProgramContentRow[]}
+      onboardingDate={onboarding?.completed_at ?? null}
     />
   )
 }

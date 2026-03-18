@@ -60,6 +60,7 @@ export default async function ClassementPage() {
       daysLeft={daysLeft}
       daysPct={daysPct}
       firstName={firstName}
+      onboardingDate={onboarding?.completed_at ?? null}
     />
   )
 }

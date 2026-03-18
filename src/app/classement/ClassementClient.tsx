@@ -13,6 +13,7 @@ interface Props {
   daysLeft: number
   daysPct: number
   firstName: string
+  onboardingDate: string | null
 }
 
 const navItems = [
@@ -28,7 +29,7 @@ const PODIUM_COLORS = {
   3: '#CD7F32',
 } as const
 
-export default function ClassementClient({ leaderboard, jourX, daysLeft, daysPct, firstName }: Props) {
+export default function ClassementClient({ leaderboard, jourX, daysLeft, daysPct, firstName, onboardingDate }: Props) {
   const router = useRouter()
 
   const handleSignOut = async () => {
@@ -54,6 +55,7 @@ export default function ClassementClient({ leaderboard, jourX, daysLeft, daysPct
         firstName={firstName}
         navItems={navItems}
         onSignOut={handleSignOut}
+        onboardingDate={onboardingDate}
       />
 
       <div style={{ maxWidth: 700, margin: '0 auto', padding: '32px 16px 80px' }}>

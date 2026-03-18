@@ -1,7 +1,7 @@
 'use client'
 
-import { memo } from 'react'
 import { C, D, M } from '@/lib/design-tokens'
+import { useCountdown, p2 } from '@/lib/hooks/useCountdown'
 import P180Logo from '@/components/P180Logo'
 
 interface NavItem {
@@ -17,6 +17,7 @@ interface Props {
   firstName: string
   navItems: NavItem[]
   onSignOut: () => void
+  onboardingDate?: string | null
 }
 
 export const NAV_ITEMS_CLIENT = [
@@ -26,7 +27,9 @@ export const NAV_ITEMS_CLIENT = [
   { label: 'Profil',     href: '/profil' },
 ]
 
-export const TopBar = memo(function TopBar({ jourX, daysLeft, daysPct, firstName, navItems, onSignOut }: Props) {
+export function TopBar({ jourX, daysLeft, daysPct, firstName, navItems, onSignOut, onboardingDate }: Props) {
+  const countdown = useCountdown(onboardingDate ?? null)
+
   return (
     <header style={{
       position: 'sticky', top: 0, zIndex: 50,
@@ -45,7 +48,7 @@ export const TopBar = memo(function TopBar({ jourX, daysLeft, daysPct, firstName
           <P180Logo size="md" />
         </a>
 
-        {/* Nav items — 4 onglets */}
+        {/* Nav items — 4 onglets, tous surlignés */}
         <nav style={{ display: 'flex', gap: 4 }}>
           {navItems.map(item => (
             <a key={item.href} href={item.href} style={{
@@ -56,8 +59,8 @@ export const TopBar = memo(function TopBar({ jourX, daysLeft, daysPct, firstName
               letterSpacing: '0.12em',
               textTransform: 'uppercase' as const,
               textDecoration: 'none',
-              color: C.accent,
-              background: item.active ? 'rgba(58,134,255,0.12)' : 'transparent',
+              color: item.active ? 'white' : C.accent,
+              background: item.active ? 'rgba(58,134,255,0.25)' : 'rgba(58,134,255,0.08)',
               borderRadius: 8,
               transition: 'all 0.15s',
             }}>
@@ -87,21 +90,32 @@ export const TopBar = memo(function TopBar({ jourX, daysLeft, daysPct, firstName
         </div>
       </div>
 
-      {/* Jour X / 180 — centered, prominent with days left in blue */}
+      {/* Jour X + Countdown live */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        gap: 8,
+        gap: 12,
         padding: '6px 20px 10px',
       }}>
-        <span style={{ ...D, fontWeight: 900, fontSize: '24px', letterSpacing: '0.06em', color: C.text, lineHeight: 1 }}>
-          JOUR {jourX}
+        <span style={{ ...D, fontWeight: 900, fontSize: '18px', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: C.text, lineHeight: 1 }}>
+          Jour {jourX}
         </span>
-        <span style={{ ...M, fontSize: '24px', color: C.muted, fontWeight: 900, lineHeight: 1 }}>
-          / 180
-        </span>
-        <span style={{ ...M, fontSize: '24px', color: C.accent, fontWeight: 900, marginLeft: 8, lineHeight: 1 }}>
-          {daysLeft}j restants
-        </span>
+
+        {/* Countdown badge */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          background: 'rgba(58,134,255,0.12)',
+          border: `1px solid rgba(58,134,255,0.25)`,
+          borderRadius: 8,
+          padding: '6px 14px',
+        }}>
+          <CountdownUnit value={countdown.d} label="j" />
+          <span style={{ ...D, color: C.muted, fontSize: '14px', fontWeight: 700 }}>:</span>
+          <CountdownUnit value={countdown.h} label="h" />
+          <span style={{ ...D, color: C.muted, fontSize: '14px', fontWeight: 700 }}>:</span>
+          <CountdownUnit value={countdown.m} label="m" />
+          <span style={{ ...D, color: C.muted, fontSize: '14px', fontWeight: 700 }}>:</span>
+          <CountdownUnit value={countdown.s} label="s" />
+        </div>
       </div>
 
       {/* Progress bar */}
@@ -115,4 +129,17 @@ export const TopBar = memo(function TopBar({ jourX, daysLeft, daysPct, firstName
       </div>
     </header>
   )
-})
+}
+
+function CountdownUnit({ value, label }: { value: number; label: string }) {
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 1 }}>
+      <span style={{ ...M, fontWeight: 700, fontSize: '16px', color: C.accent, minWidth: 22, textAlign: 'center' }}>
+        {p2(value)}
+      </span>
+      <span style={{ ...D, fontWeight: 600, fontSize: '10px', color: C.muted, letterSpacing: '0.05em', textTransform: 'uppercase' as const }}>
+        {label}
+      </span>
+    </span>
+  )
+}

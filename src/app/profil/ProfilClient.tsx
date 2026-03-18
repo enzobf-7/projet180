@@ -213,6 +213,7 @@ export default function ProfilClient({ jourX, email, responses, gamification, on
         firstName={firstName}
         navItems={navItems}
         onSignOut={handleSignOut}
+        onboardingDate={onboardingDate}
       />
 
       {/* ── Main ─────────────────────────────────────────────────────────────── */}
