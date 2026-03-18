@@ -60,7 +60,7 @@ export function WelcomeOverlay() {
 
         {/* Section 1: Niveaux */}
         <div style={{ marginBottom: 28 }}>
-          <div style={{ ...D, fontWeight: 800, fontSize: '13px', letterSpacing: '0.15em', textTransform: 'uppercase' as const, color: C.accent, marginBottom: 14 }}>
+          <div style={{ ...D, fontWeight: 800, fontSize: '13px', letterSpacing: '0.15em', textTransform: 'uppercase' as const, color: C.accent, marginBottom: 14, textAlign: 'center' as const }}>
             6 niveaux de progression
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -94,7 +94,7 @@ export function WelcomeOverlay() {
 
         {/* Section 2: Comment gagner de l'XP */}
         <div style={{ marginBottom: 28 }}>
-          <div style={{ ...D, fontWeight: 800, fontSize: '13px', letterSpacing: '0.15em', textTransform: 'uppercase' as const, color: C.accent, marginBottom: 14 }}>
+          <div style={{ ...D, fontWeight: 800, fontSize: '13px', letterSpacing: '0.15em', textTransform: 'uppercase' as const, color: C.accent, marginBottom: 14, textAlign: 'center' as const }}>
             Comment gagner de l'XP
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -119,10 +119,10 @@ export function WelcomeOverlay() {
 
         {/* Section 3: Multiplicateurs de streak */}
         <div style={{ marginBottom: 32 }}>
-          <div style={{ ...D, fontWeight: 800, fontSize: '13px', letterSpacing: '0.15em', textTransform: 'uppercase' as const, color: C.accent, marginBottom: 14 }}>
+          <div style={{ ...D, fontWeight: 800, fontSize: '13px', letterSpacing: '0.15em', textTransform: 'uppercase' as const, color: C.accent, marginBottom: 14, textAlign: 'center' as const }}>
             Multiplicateurs de série
           </div>
-          <p style={{ ...D, fontWeight: 500, fontSize: '13px', color: C.muted, marginBottom: 12, lineHeight: 1.5 }}>
+          <p style={{ ...D, fontWeight: 500, fontSize: '15px', color: C.muted, marginBottom: 12, lineHeight: 1.5, textAlign: 'center' }}>
             Plus ta série de jours consécutifs est longue, plus tu gagnes d'XP par habitude.
           </p>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -147,7 +147,7 @@ export function WelcomeOverlay() {
 
         {/* CTA */}
         <P180Button onClick={handleDismiss} fullWidth size="lg">
-          C'est parti
+          C'est parti !
         </P180Button>
       </div>
     </div>
