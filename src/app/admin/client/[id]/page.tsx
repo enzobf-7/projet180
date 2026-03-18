@@ -108,7 +108,7 @@ export default async function ClientFiche({
       admin.from('gamification').select('xp_total, current_streak, longest_streak').eq('client_id', id).single(),
       admin.from('habits').select('id, name, category, is_active, progress_percent, description, xp_reward, period, sort_order').eq('client_id', id).order('sort_order'),
       admin.from('weekly_reports').select('id, week_number, motivation_score, submitted_at, responses').eq('client_id', id).order('week_number', { ascending: false }),
-      admin.from('onboarding_progress').select('completed_at').eq('user_id', id).single(), // ← user_id, pas client_id
+      admin.from('onboarding_progress').select('completed_at').eq('client_id', id).single(),
     ])
 
   if (!profileRes.data) notFound()

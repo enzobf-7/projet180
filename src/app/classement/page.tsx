@@ -21,7 +21,7 @@ export default async function ClassementPage() {
       .select('client_id, xp_total, current_streak, profiles!client_id(first_name)')
       .order('xp_total', { ascending: false })
       .limit(100),
-    admin.from('onboarding_progress').select('completed_at').eq('user_id', user.id).single(),
+    admin.from('onboarding_progress').select('completed_at').eq('client_id', user.id).single(),
     admin.from('questionnaire_responses').select('responses').eq('client_id', user.id).single(),
   ])
 

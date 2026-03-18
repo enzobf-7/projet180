@@ -28,11 +28,11 @@ export async function GET() {
 
   const [{ data: gamification }, { data: onboarding }] = await Promise.all([
     admin.from('gamification').select('client_id, xp_total, level').in('client_id', clientIds),
-    admin.from('onboarding_progress').select('user_id, completed_at').in('user_id', clientIds),
+    admin.from('onboarding_progress').select('client_id, completed_at').in('client_id', clientIds),
   ])
 
   const gamMap = Object.fromEntries((gamification ?? []).map(g => [g.client_id, g]))
-  const onbMap = Object.fromEntries((onboarding ?? []).map(o => [o.user_id, o]))
+  const onbMap = Object.fromEntries((onboarding ?? []).map(o => [o.client_id, o]))
 
   const clients = clientUsers.map(u => {
     const gam = gamMap[u.id]
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
 
   const userId = authUser.user.id
 
-  await admin.from('onboarding_progress').insert({ user_id: userId })
+  await admin.from('onboarding_progress').insert({ client_id: userId })
   await admin.from('programs').insert({ client_id: userId, content: [] })
   await admin.from('gamification').insert({ client_id: userId })
 

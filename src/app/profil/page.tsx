@@ -17,7 +17,7 @@ export default async function ProfilPage() {
     { data: weeklyReports },
     { data: wins },
   ] = await Promise.all([
-    admin.from('onboarding_progress').select('completed_at').eq('user_id', user.id).single(),
+    admin.from('onboarding_progress').select('completed_at').eq('client_id', user.id).single(),
     admin.from('questionnaire_responses').select('responses').eq('client_id', user.id).single(),
     admin.from('gamification').select('xp_total, current_streak, longest_streak, level').eq('client_id', user.id).single(),
     admin.from('weekly_reports').select('id, week_number, motivation_score, responses, submitted_at').eq('client_id', user.id).order('week_number', { ascending: false }),

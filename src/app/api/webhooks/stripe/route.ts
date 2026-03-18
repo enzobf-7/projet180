@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
 
     const userId = authUser.user.id
 
-    await supabase.from('onboarding_progress').insert({ user_id: userId })
+    await supabase.from('onboarding_progress').insert({ client_id: userId })
     await supabase.from('programs').insert({ client_id: userId, content: [] })
     await supabase.from('gamification').insert({ client_id: userId })
     await supabase.from('todos').insert([

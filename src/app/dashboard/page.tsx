@@ -27,7 +27,7 @@ export default async function DashboardPage() {
     { data: todosData },
     { data: personalTodosData },
   ] = await Promise.all([
-    admin.from('onboarding_progress').select('completed_at').eq('user_id', user.id).single(),
+    admin.from('onboarding_progress').select('completed_at').eq('client_id', user.id).single(),
     admin.from('questionnaire_responses').select('responses').eq('client_id', user.id).single(),
     admin.from('gamification').select('xp_total, current_streak, longest_streak, level').eq('client_id', user.id).single(),
     admin.from('habits').select('id, name, category, description, progress_percent, xp_reward, period').eq('client_id', user.id).eq('is_active', true).order('sort_order, name'),
@@ -36,7 +36,7 @@ export default async function DashboardPage() {
       .select('client_id, xp_total, current_streak, profiles!client_id(first_name)')
       .order('xp_total', { ascending: false })
       .limit(100),
-    admin.from('app_settings').select('whatsapp_link, robin_whatsapp').eq('id', 1).single(),
+    admin.from('app_settings').select('whatsapp_link, robin_whatsapp').limit(1).single(),
     admin.from('habit_logs').select('id', { count: 'exact', head: true }).eq('client_id', user.id).eq('completed', true).gte('date', weekStart).lte('date', today),
     admin.from('todos').select('id, title, is_system, completed_date, day_of_week').eq('client_id', user.id)
       .order('is_system', { ascending: true }).order('created_at', { ascending: true }),
