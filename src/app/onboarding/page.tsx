@@ -813,7 +813,10 @@ function Step5Call({
           <div className="text-6xl">📞</div>
           <p className="text-base font-medium uppercase tracking-wider" style={{ ...D, color: C.text }}>Tu y es. Robin t'attend.</p>
           <p className="text-base leading-relaxed uppercase tracking-wider" style={{ ...D, color: C.muted }}>
-            Choisis le créneau qui te convient. Ce call de démarrage est le point de lancement de ta transformation.
+            Choisis le créneau qui te convient.
+          </p>
+          <p className="text-base leading-relaxed uppercase tracking-wider" style={{ ...D, color: C.muted }}>
+            Ce call de démarrage est le point de lancement de ta transformation.
           </p>
           <div className="max-w-md mx-auto">
             <P180Button onClick={onBook} fullWidth>
