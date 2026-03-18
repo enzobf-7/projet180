@@ -39,7 +39,8 @@ export default function ClassementClient({ leaderboard, jourX, daysLeft, daysPct
   }
 
   const top3 = leaderboard.slice(0, 3)
-  const rest = leaderboard.slice(3)
+  const me = leaderboard.find(e => e.isMe)
+  const totalXP = leaderboard.reduce((sum, e) => sum + e.xp, 0)
 
   // Reorder for podium: [2nd, 1st, 3rd]
   const podiumOrder = top3.length >= 3
@@ -67,131 +68,167 @@ export default function ClassementClient({ leaderboard, jourX, daysLeft, daysPct
           letterSpacing: '0.08em',
           textTransform: 'uppercase',
           textAlign: 'center',
-          marginBottom: 32,
+          marginBottom: 24,
         }}>
           Classement
         </h1>
 
+        {/* Stats bar */}
+        <div style={{
+          display: 'flex', gap: 12, marginBottom: 32,
+          justifyContent: 'center',
+        }}>
+          {[
+            { label: 'Participants', value: String(leaderboard.length), color: C.accent },
+            { label: 'Ton rang', value: me ? `#${me.rank}` : '—', color: C.accent },
+            { label: 'XP collectif', value: totalXP.toLocaleString('fr-FR'), color: C.greenL },
+          ].map(s => (
+            <div key={s.label} style={{
+              flex: 1, textAlign: 'center',
+              padding: '14px 8px',
+              background: C.surface,
+              border: `1px solid ${C.border}`,
+              borderRadius: 10,
+            }}>
+              <div style={{ ...M, fontWeight: 700, fontSize: '18px', color: s.color, lineHeight: 1 }}>
+                {s.value}
+              </div>
+              <div style={{ ...D, fontWeight: 700, fontSize: '9px', letterSpacing: '0.2em', textTransform: 'uppercase' as const, color: C.muted, marginTop: 6 }}>
+                {s.label}
+              </div>
+            </div>
+          ))}
+        </div>
+
         {/* Podium */}
         {top3.length >= 3 && (
           <div style={{
-            display: 'flex',
-            alignItems: 'flex-end',
-            justifyContent: 'center',
-            gap: 12,
+            position: 'relative',
+            padding: '24px 16px 0',
             marginBottom: 40,
-            padding: '0 16px',
+            background: `radial-gradient(ellipse at 50% 100%, ${C.accent}08 0%, transparent 70%)`,
+            borderRadius: 16,
           }}>
-            {podiumOrder.map((entry, i) => {
-              const isFirst = i === 1 // center = 1st place
-              const podiumRank = isFirst ? 1 : i === 0 ? 2 : 3
-              const color = PODIUM_COLORS[podiumRank as keyof typeof PODIUM_COLORS]
-              const height = isFirst ? 180 : podiumRank === 2 ? 150 : 130
-              const avatarSize = isFirst ? 64 : 50
+            <div style={{
+              display: 'flex',
+              alignItems: 'flex-end',
+              justifyContent: 'center',
+              gap: 12,
+            }}>
+              {podiumOrder.map((entry, i) => {
+                const isFirst = i === 1
+                const podiumRank = isFirst ? 1 : i === 0 ? 2 : 3
+                const color = PODIUM_COLORS[podiumRank as keyof typeof PODIUM_COLORS]
+                const height = isFirst ? 180 : podiumRank === 2 ? 150 : 130
+                const avatarSize = isFirst ? 64 : 50
 
-              return (
-                <div key={entry.clientId} style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  flex: 1,
-                  maxWidth: 160,
-                }}>
-                  {/* Crown for 1st */}
-                  {isFirst && (
-                    <div style={{ fontSize: 28, marginBottom: 4, lineHeight: 1 }}>
-                      {'\u{1F451}'}
-                    </div>
-                  )}
-
-                  {/* Avatar */}
-                  <div style={{
-                    width: avatarSize,
-                    height: avatarSize,
-                    borderRadius: '50%',
-                    background: `linear-gradient(135deg, ${color}, ${color}88)`,
+                return (
+                  <div key={entry.clientId} style={{
                     display: 'flex',
+                    flexDirection: 'column',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    border: `3px solid ${color}`,
-                    marginBottom: 8,
-                    boxShadow: isFirst ? `0 0 24px ${color}44` : 'none',
+                    flex: 1,
+                    maxWidth: 160,
                   }}>
-                    <span style={{
-                      ...D,
-                      fontWeight: 900,
-                      fontSize: isFirst ? '24px' : '20px',
-                      color: '#000',
+                    {/* Crown for 1st */}
+                    {isFirst && (
+                      <div style={{ fontSize: 28, marginBottom: 4, lineHeight: 1 }}>
+                        {'\u{1F451}'}
+                      </div>
+                    )}
+
+                    {/* Avatar with glow */}
+                    <div style={{
+                      width: avatarSize,
+                      height: avatarSize,
+                      borderRadius: '50%',
+                      background: `linear-gradient(135deg, ${color}, ${color}88)`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      border: `3px solid ${color}`,
+                      marginBottom: 8,
+                      boxShadow: `0 0 ${isFirst ? 30 : 16}px ${color}${isFirst ? '55' : '30'}`,
                     }}>
-                      {entry.firstName.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
+                      <span style={{
+                        ...D,
+                        fontWeight: 900,
+                        fontSize: isFirst ? '24px' : '20px',
+                        color: '#000',
+                      }}>
+                        {entry.firstName.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
 
-                  {/* Name */}
-                  <span style={{
-                    ...D,
-                    fontWeight: 700,
-                    fontSize: '14px',
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase',
-                    color: C.text,
-                    textAlign: 'center',
-                    marginBottom: 4,
-                    maxWidth: '100%',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}>
-                    {entry.firstName}
-                  </span>
-
-                  {/* XP */}
-                  <span style={{
-                    ...M,
-                    fontSize: '13px',
-                    color,
-                    fontWeight: 700,
-                    marginBottom: 4,
-                  }}>
-                    {entry.xp.toLocaleString('fr-FR')} XP
-                  </span>
-
-                  {/* Level */}
-                  <span style={{
-                    ...D,
-                    fontSize: '11px',
-                    letterSpacing: '0.06em',
-                    textTransform: 'uppercase',
-                    color: C.muted,
-                  }}>
-                    {getLevelName(entry.xp)}
-                  </span>
-
-                  {/* Podium block */}
-                  <div style={{
-                    width: '100%',
-                    height,
-                    background: `linear-gradient(180deg, ${color}22, ${color}08)`,
-                    borderTop: `3px solid ${color}`,
-                    borderRadius: '8px 8px 0 0',
-                    marginTop: 12,
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    justifyContent: 'center',
-                    paddingTop: 16,
-                  }}>
+                    {/* Name */}
                     <span style={{
                       ...D,
-                      fontWeight: 900,
-                      fontSize: isFirst ? '36px' : '28px',
+                      fontWeight: 700,
+                      fontSize: '14px',
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                      color: C.text,
+                      textAlign: 'center',
+                      marginBottom: 4,
+                      maxWidth: '100%',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}>
+                      {entry.firstName}
+                    </span>
+
+                    {/* XP */}
+                    <span style={{
+                      ...M,
+                      fontSize: '13px',
                       color,
+                      fontWeight: 700,
+                      marginBottom: 4,
+                      textShadow: `0 0 8px ${color}40`,
                     }}>
-                      {podiumRank}
+                      {entry.xp.toLocaleString('fr-FR')} XP
                     </span>
+
+                    {/* Level */}
+                    <span style={{
+                      ...D,
+                      fontSize: '11px',
+                      letterSpacing: '0.06em',
+                      textTransform: 'uppercase',
+                      color: C.muted,
+                    }}>
+                      {getLevelName(entry.xp)}
+                    </span>
+
+                    {/* Podium block */}
+                    <div style={{
+                      width: '100%',
+                      height,
+                      background: `linear-gradient(180deg, ${color}22, ${color}06)`,
+                      borderTop: `3px solid ${color}`,
+                      borderRadius: '8px 8px 0 0',
+                      marginTop: 12,
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      justifyContent: 'center',
+                      paddingTop: 16,
+                      boxShadow: `inset 0 1px 0 ${color}30`,
+                    }}>
+                      <span style={{
+                        ...D,
+                        fontWeight: 900,
+                        fontSize: isFirst ? '36px' : '28px',
+                        color,
+                        textShadow: `0 0 12px ${color}30`,
+                      }}>
+                        {podiumRank}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              )
-            })}
+                )
+              })}
+            </div>
           </div>
         )}
 
@@ -204,8 +241,10 @@ export default function ClassementClient({ leaderboard, jourX, daysLeft, daysPct
           {leaderboard.map((entry, i) => {
             const levelName = getLevelName(entry.xp)
             const levelPct = getLevelProgress(entry.xp)
-            const currentLvl = getCurrentLevel(entry.xp)
             const isEven = i % 2 === 0
+            const rankColor = entry.rank <= 3
+              ? PODIUM_COLORS[entry.rank as keyof typeof PODIUM_COLORS]
+              : null
 
             return (
               <div key={entry.clientId} style={{
@@ -216,7 +255,11 @@ export default function ClassementClient({ leaderboard, jourX, daysLeft, daysPct
                 background: entry.isMe
                   ? `${C.accent}18`
                   : isEven ? C.surface : C.bg,
-                borderLeft: entry.isMe ? `3px solid ${C.accent}` : '3px solid transparent',
+                borderLeft: entry.isMe
+                  ? `3px solid ${C.accent}`
+                  : rankColor
+                    ? `3px solid ${rankColor}40`
+                    : '3px solid transparent',
                 borderBottom: i < leaderboard.length - 1 ? `1px solid ${C.border}` : 'none',
                 transition: 'background 0.15s',
               }}>
@@ -225,12 +268,11 @@ export default function ClassementClient({ leaderboard, jourX, daysLeft, daysPct
                   ...M,
                   fontWeight: 700,
                   fontSize: '14px',
-                  color: entry.rank <= 3
-                    ? PODIUM_COLORS[entry.rank as keyof typeof PODIUM_COLORS]
-                    : C.muted,
+                  color: rankColor ?? C.muted,
                   width: 32,
                   textAlign: 'center',
                   flexShrink: 0,
+                  ...(rankColor ? { textShadow: `0 0 6px ${rankColor}30` } : {}),
                 }}>
                   {entry.rank}
                 </span>
@@ -245,9 +287,10 @@ export default function ClassementClient({ leaderboard, jourX, daysLeft, daysPct
                   alignItems: 'center',
                   justifyContent: 'center',
                   flexShrink: 0,
-                  border: entry.rank <= 3
-                    ? `2px solid ${PODIUM_COLORS[entry.rank as keyof typeof PODIUM_COLORS]}`
+                  border: rankColor
+                    ? `2px solid ${rankColor}`
                     : `2px solid ${C.border}`,
+                  ...(rankColor ? { boxShadow: `0 0 8px ${rankColor}20` } : {}),
                 }}>
                   <span style={{
                     ...D,
@@ -313,7 +356,9 @@ export default function ClassementClient({ leaderboard, jourX, daysLeft, daysPct
                       width: `${levelPct}%`,
                       background: entry.isMe
                         ? `linear-gradient(90deg, ${C.accent}, ${C.accentL})`
-                        : `linear-gradient(90deg, ${C.muted}, ${C.muted}88)`,
+                        : rankColor
+                          ? `linear-gradient(90deg, ${rankColor}, ${rankColor}88)`
+                          : `linear-gradient(90deg, ${C.muted}, ${C.muted}88)`,
                       borderRadius: 2,
                       transition: 'width 0.6s ease',
                     }} />
@@ -325,7 +370,7 @@ export default function ClassementClient({ leaderboard, jourX, daysLeft, daysPct
                   ...M,
                   fontWeight: 700,
                   fontSize: '13px',
-                  color: entry.isMe ? C.accent : C.text,
+                  color: entry.isMe ? C.accent : rankColor ?? C.text,
                   flexShrink: 0,
                   textAlign: 'right',
                   minWidth: 60,
