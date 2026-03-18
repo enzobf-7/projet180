@@ -97,20 +97,11 @@ export default function ProgrammeClient({
         }}>
           <div style={{ padding: '20px 24px 8px' }}>
             <div style={{
-              ...D, fontWeight: 700, fontSize: '10px',
-              letterSpacing: '0.35em', textTransform: 'uppercase' as const,
-              color: C.accent, marginBottom: 6,
-            }}>
-              Cette semaine
-            </div>
-            <div style={{
-              ...D, fontWeight: 900, fontSize: '22px',
+              ...D, fontWeight: 900, fontSize: '20px',
               letterSpacing: '0.08em', textTransform: 'uppercase' as const,
               color: C.text, marginBottom: 4,
             }}>
-              {currentWeekContent?.title
-                ? currentWeekContent.title
-                : `Semaine ${currentWeek}`}
+              Cette semaine
             </div>
             <div style={{ ...M, fontSize: '11px', color: C.muted, marginBottom: 16 }}>
               Semaine {currentWeek} / 26 &nbsp;&middot;&nbsp; Jour {jourX} / 180

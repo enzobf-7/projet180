@@ -63,7 +63,7 @@ export default function ClassementClient({ leaderboard, jourX, daysLeft, daysPct
         <h1 style={{
           ...D,
           fontWeight: 900,
-          fontSize: '28px',
+          fontSize: '20px',
           letterSpacing: '0.12em',
           textTransform: 'uppercase',
           textAlign: 'center',

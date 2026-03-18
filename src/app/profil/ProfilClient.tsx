@@ -241,10 +241,10 @@ export default function ProfilClient({ jourX, email, responses, gamification, on
 
             {/* Identity */}
             <div style={{ flex: 1, minWidth: 200 }}>
-              <div style={{ ...D, fontWeight: 900, fontSize: '28px', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: C.text, lineHeight: 1 }}>
+              <div style={{ ...D, fontWeight: 900, fontSize: '20px', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: C.text, lineHeight: 1 }}>
                 {firstName}{lastName ? ` ${lastName}` : ''}
               </div>
-              <div style={{ ...D, fontWeight: 700, fontSize: '13px', letterSpacing: '0.2em', textTransform: 'uppercase' as const, color: C.accent, marginTop: 4 }}>
+              <div style={{ ...D, fontWeight: 700, fontSize: '12px', letterSpacing: '0.2em', textTransform: 'uppercase' as const, color: C.accent, marginTop: 4 }}>
                 {level.name}
               </div>
               <div style={{ ...M, fontSize: '11px', color: C.muted, marginTop: 6 }}>{email}</div>
@@ -264,7 +264,7 @@ export default function ProfilClient({ jourX, email, responses, gamification, on
               ].map(s => (
                 <div key={s.label} style={{ textAlign: 'center' as const }}>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 3, justifyContent: 'center' }}>
-                    <span style={{ ...D, fontWeight: 900, fontSize: '28px', color: C.text, lineHeight: 1 }}>{s.value}</span>
+                    <span style={{ ...D, fontWeight: 900, fontSize: '22px', color: C.text, lineHeight: 1 }}>{s.value}</span>
                     <span style={{ ...M, fontSize: '11px', color: C.muted }}>{s.unit}</span>
                   </div>
                   <div style={{ ...D, fontWeight: 700, fontSize: '9px', letterSpacing: '0.2em', textTransform: 'uppercase' as const, color: C.muted, marginTop: 2 }}>
