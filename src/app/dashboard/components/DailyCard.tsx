@@ -303,9 +303,6 @@ export const DailyCard = memo(function DailyCard({
       {/* Tâches obligatoires (system todos) */}
       {todayTodos.length > 0 && (
         <div>
-          <div style={{ padding: '14px 24px 6px', ...D, fontWeight: 700, fontSize: '10px', letterSpacing: '0.2em', color: C.orange, textTransform: 'uppercase' as const }}>
-            Obligatoires
-          </div>
           {todayTodos.map(renderTodoRow)}
         </div>
       )}
