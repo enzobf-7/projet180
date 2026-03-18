@@ -750,16 +750,16 @@ function Step3Link({
       <div className="rounded-xl p-6 text-center space-y-4" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
         <div className="text-7xl">{icon}</div>
         <p className="text-base leading-relaxed uppercase tracking-wider" style={{ ...D, color: C.muted }}>{details ?? description}</p>
-        <div className="max-w-md mx-auto">
-          <P180Button onClick={onConfirm} fullWidth>
-            {hasLink ? `${cta} →` : 'Passer cette étape →'}
-          </P180Button>
-        </div>
         <p className="text-base leading-relaxed uppercase tracking-wider" style={{ ...D, color: C.muted }}>
           {hasLink
             ? "Le lien s'ouvre dans un nouvel onglet. Cette étape sera automatiquement validée."
             : "Le lien n'est pas encore configuré par Robin. Tu peux passer pour l'instant."}
         </p>
+        <div className="max-w-md mx-auto">
+          <P180Button onClick={onConfirm} fullWidth>
+            {hasLink ? `${cta} →` : 'Passer cette étape →'}
+          </P180Button>
+        </div>
       </div>
     </div>
   )
