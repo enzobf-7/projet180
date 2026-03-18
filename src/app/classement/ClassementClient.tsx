@@ -64,7 +64,7 @@ export default function ClassementClient({ leaderboard, jourX, daysLeft, daysPct
           ...D,
           fontWeight: 900,
           fontSize: '20px',
-          letterSpacing: '0.12em',
+          letterSpacing: '0.08em',
           textTransform: 'uppercase',
           textAlign: 'center',
           marginBottom: 32,

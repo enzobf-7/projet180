@@ -45,7 +45,7 @@ export const HeroCard = memo(function HeroCard({
             </span>
           </div>
           <div>
-            <div style={{ ...D, fontWeight: 800, fontSize: '20px', letterSpacing: '0.04em', color: C.text, lineHeight: 1.1 }}>
+            <div style={{ ...D, fontWeight: 900, fontSize: '20px', letterSpacing: '0.08em', textTransform: 'uppercase' as const, color: C.text, lineHeight: 1.1 }}>
               {level.name}
             </div>
             <div style={{ ...M, fontSize: '10px', color: C.muted, marginTop: 2 }}>
