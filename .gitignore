@@ -38,6 +38,7 @@ yarn-error.log*
 
 # demo / presentation (pas du code app)
 demo-presentation.html
+presentation-phase2.html
 email-preview.html
 
 # typescript

@@ -19,8 +19,19 @@ export default async function ProgrammePage() {
     admin.from('onboarding_progress').select('completed_at').eq('client_id', user.id).single(),
     admin.from('questionnaire_responses').select('responses').eq('client_id', user.id).single(),
     admin.from('gamification').select('xp_total, current_streak, longest_streak, level').eq('client_id', user.id).single(),
-    admin.from('program_content').select('phase_number, week_number, title, objectives, focus_text, robin_notes').order('week_number', { ascending: true }),
+    admin.from('program_content').select('phase_number, week_number, title, objectives, focus_text, robin_notes').eq('client_id', user.id).order('week_number', { ascending: true }),
   ])
+
+  // Fallback vers le template global si aucun programme personnalisé
+  let finalProgramContent = programContent
+  if (!programContent || programContent.length === 0) {
+    const { data: template } = await admin
+      .from('program_content')
+      .select('phase_number, week_number, title, objectives, focus_text, robin_notes')
+      .is('client_id', null)
+      .order('week_number', { ascending: true })
+    finalProgramContent = template
+  }
 
   // Jour X / 180
   let jourX = 1
@@ -42,7 +53,7 @@ export default async function ProgrammePage() {
         (gamification as { xp_total: number; current_streak: number; longest_streak: number; level: number })
         ?? { xp_total: 0, current_streak: 0, longest_streak: 0, level: 1 }
       }
-      programContent={(programContent ?? []) as ProgramContentRow[]}
+      programContent={(finalProgramContent ?? []) as ProgramContentRow[]}
       onboardingDate={onboarding?.completed_at ?? null}
     />
   )

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { sendEmail, p180EmailTemplate } from '@/lib/email'
 
 const MILESTONES = [30, 60, 90, 180] as const
 
@@ -90,43 +91,33 @@ export async function GET(request: NextRequest) {
     const msg = MILESTONE_MESSAGES[milestone]
 
     try {
-      const res = await fetch('https://api.brevo.com/v3/smtp/email', {
-        method: 'POST',
-        headers: {
-          accept: 'application/json',
-          'api-key': process.env.BREVO_API_KEY!,
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          sender: { name: 'Robin — Projet180', email: 'noreply@projet180.fr' },
-          to: [{ email: profile.email, name: firstName }],
-          subject: msg.subject,
-          htmlContent: `
-            <div style="font-family: -apple-system, sans-serif; max-width: 500px; margin: 0 auto; color: #F2F2F5; background: #060606; padding: 40px 30px; border-radius: 16px;">
-              <p style="color: #3A86FF; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Jour ${milestone} / 180</p>
-              <h1 style="font-size: 22px; margin-bottom: 24px;">${firstName}.</h1>
-              <p style="color: #888; line-height: 1.8;">
-                ${msg.body}
-              </p>
-              <a href="${appUrl}/dashboard" style="display: inline-block; background: #3A86FF; color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; margin-top: 24px;">
-                Voir ma progression
-              </a>
-              <p style="color: #484848; font-size: 13px; margin-top: 32px;">
-                — Robin, Projet180
-              </p>
-            </div>
-          `,
-        }),
+      const ok = await sendEmail({
+        to: profile.email,
+        toName: firstName,
+        subject: msg.subject,
+        html: p180EmailTemplate(`
+          <p style="color: #3A86FF; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Jour ${milestone} / 180</p>
+          <h1 style="font-size: 22px; margin-bottom: 24px;">${firstName}.</h1>
+          <p style="color: #888; line-height: 1.8;">
+            ${msg.body}
+          </p>
+          <a href="${appUrl}/dashboard" style="display: inline-block; background: #3A86FF; color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; margin-top: 24px;">
+            Voir ma progression
+          </a>
+          <p style="color: #484848; font-size: 13px; margin-top: 32px;">
+            — Robin, Projet180
+          </p>
+        `),
       })
 
-      if (res.ok) {
+      if (ok) {
         // Record that we sent this milestone email
         await admin
           .from('milestone_emails_sent')
           .insert({ client_id: clientId, milestone_day: milestone })
         sent++
       } else {
-        errors.push(`${clientId} J${milestone}: Brevo ${res.status}`)
+        errors.push(`${clientId} J${milestone}: Brevo send failed`)
       }
     } catch (err) {
       errors.push(`${clientId} J${milestone}: ${String(err)}`)

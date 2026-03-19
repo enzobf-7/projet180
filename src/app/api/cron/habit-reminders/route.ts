@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { sendEmail, p180EmailTemplate } from '@/lib/email'
 
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
@@ -60,40 +61,30 @@ export async function GET(request: NextRequest) {
     const firstName = profile.first_name || 'toi'
 
     try {
-      const res = await fetch('https://api.brevo.com/v3/smtp/email', {
-        method: 'POST',
-        headers: {
-          accept: 'application/json',
-          'api-key': process.env.BREVO_API_KEY!,
-          'content-type': 'application/json',
-        },
-        body: JSON.stringify({
-          sender: { name: 'Robin — Projet180', email: 'noreply@projet180.fr' },
-          to: [{ email: profile.email, name: firstName }],
-          subject: 'Tu as manqué tes habitudes hier',
-          htmlContent: `
-            <div style="font-family: -apple-system, sans-serif; max-width: 500px; margin: 0 auto; color: #F2F2F5; background: #060606; padding: 40px 30px; border-radius: 16px;">
-              <h1 style="font-size: 22px; margin-bottom: 16px;">Hé ${firstName}.</h1>
-              <p style="color: #888; line-height: 1.7;">
-                Tu n'as coché aucune habitude hier. C'est une journée de perdue sur ta transformation de 180 jours.
-              </p>
-              <p style="color: #888; line-height: 1.7;">
-                Le succès se construit dans la régularité. Pas dans la perfection — dans la constance.
-              </p>
-              <a href="${appUrl}/dashboard" style="display: inline-block; background: #3A86FF; color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; margin-top: 16px;">
-                Reprendre aujourd'hui
-              </a>
-              <p style="color: #484848; font-size: 13px; margin-top: 32px;">
-                — Robin, Projet180
-              </p>
-            </div>
-          `,
-        }),
+      const ok = await sendEmail({
+        to: profile.email,
+        toName: firstName,
+        subject: 'Tu as manqué tes habitudes hier',
+        html: p180EmailTemplate(`
+          <h1 style="font-size: 22px; margin-bottom: 16px;">Hé ${firstName}.</h1>
+          <p style="color: #888; line-height: 1.7;">
+            Tu n'as coché aucune habitude hier. C'est une journée de perdue sur ta transformation de 180 jours.
+          </p>
+          <p style="color: #888; line-height: 1.7;">
+            Le succès se construit dans la régularité. Pas dans la perfection — dans la constance.
+          </p>
+          <a href="${appUrl}/dashboard" style="display: inline-block; background: #3A86FF; color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; margin-top: 16px;">
+            Reprendre aujourd'hui
+          </a>
+          <p style="color: #484848; font-size: 13px; margin-top: 32px;">
+            — Robin, Projet180
+          </p>
+        `),
       })
-      if (res.ok) {
+      if (ok) {
         sent++
       } else {
-        errors.push(`${clientId}: Brevo ${res.status}`)
+        errors.push(`${clientId}: Brevo send failed`)
       }
     } catch (err) {
       errors.push(`${clientId}: ${String(err)}`)

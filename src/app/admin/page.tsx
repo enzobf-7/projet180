@@ -92,6 +92,7 @@ export default function AdminPage() {
   const [newClientFirstName, setNewClientFirstName] = useState('')
   const [newClientLastName, setNewClientLastName] = useState('')
   const [newClientEmail, setNewClientEmail] = useState('')
+  const [newClientJourX, setNewClientJourX] = useState('')
   const [clientMsg, setClientMsg] = useState<string | null>(null)
   const [clientErr, setClientErr] = useState<string | null>(null)
 
@@ -103,6 +104,7 @@ export default function AdminPage() {
   const [newHabitCategory, setNewHabitCategory] = useState<'habit' | 'mission'>('habit')
   const [addingHabit, setAddingHabit] = useState(false)
   const [habitErr, setHabitErr] = useState<string | null>(null)
+  const [habitMsg, setHabitMsg] = useState<string | null>(null)
 
   // — Todos —
   const [todos, setTodos] = useState<Todo[]>([])
@@ -112,6 +114,7 @@ export default function AdminPage() {
   const [todoErr, setTodoErr] = useState<string | null>(null)
 
   // — Programme —
+  const [programClientId, setProgramClientId] = useState<string>('')
   const [programContent, setProgramContent] = useState<ProgramContentRow[]>([])
   const [loadingProgram, setLoadingProgram] = useState(false)
   const [savingWeek, setSavingWeek] = useState<string | null>(null)
@@ -184,12 +187,17 @@ export default function AdminPage() {
     { num: 6, name: 'TRANSCENDANCE', weeks: [22, 23, 24, 25, 26] },
   ]
 
-  const loadProgramContent = useCallback(async () => {
+  const loadProgramContent = useCallback(async (clientId?: string) => {
     setLoadingProgram(true)
-    const { data, error } = await supabase
+    let query = supabase
       .from('program_content')
       .select('id, phase_number, week_number, title, objectives, focus_text, robin_notes')
-      .order('week_number', { ascending: true })
+    if (clientId) {
+      query = query.eq('client_id', clientId)
+    } else {
+      query = query.is('client_id', null)
+    }
+    const { data, error } = await query.order('week_number', { ascending: true })
     if (!error && data) {
       setProgramContent(data as ProgramContentRow[])
     }
@@ -197,8 +205,8 @@ export default function AdminPage() {
   }, [supabase])
 
   useEffect(() => {
-    if (activeTab === 'programme') loadProgramContent()
-  }, [activeTab, loadProgramContent])
+    if (activeTab === 'programme') loadProgramContent(programClientId || undefined)
+  }, [activeTab, programClientId, loadProgramContent])
 
   function getProgramWeek(phase: number, week: number): ProgramContentRow {
     const existing = programContent.find(p => p.phase_number === phase && p.week_number === week)
@@ -225,6 +233,7 @@ export default function AdminPage() {
     const { error } = await supabase
       .from('program_content')
       .upsert({
+        client_id: programClientId || null,
         phase_number: phase,
         week_number: week,
         title: content.title,
@@ -232,12 +241,12 @@ export default function AdminPage() {
         focus_text: content.focus_text,
         robin_notes: content.robin_notes,
         updated_at: new Date().toISOString(),
-      }, { onConflict: 'phase_number,week_number' })
+      }, { onConflict: 'client_id,phase_number,week_number' })
     if (error) {
       setProgramMsg('Erreur lors de la sauvegarde.')
     } else {
       setProgramMsg(`Semaine ${week} sauvegardée.`)
-      await loadProgramContent()
+      await loadProgramContent(programClientId || undefined)
     }
     setSavingWeek(null)
   }
@@ -276,16 +285,19 @@ export default function AdminPage() {
         first_name: newClientFirstName,
         last_name: newClientLastName,
         email: newClientEmail,
+        jour_x: newClientJourX ? Number(newClientJourX) : 1,
       }),
     })
     const json = await res.json()
     if (!res.ok) {
       setClientErr(json.error ?? 'Erreur lors de la création.')
     } else {
-      setClientMsg(`Client créé. Email de bienvenue envoyé à ${newClientEmail}.`)
+      const jourXLabel = newClientJourX && Number(newClientJourX) > 1 ? ` (démarré à J${newClientJourX})` : ''
+      setClientMsg(`Client créé${jourXLabel}. Email de bienvenue envoyé à ${newClientEmail}.`)
       setNewClientFirstName('')
       setNewClientLastName('')
       setNewClientEmail('')
+      setNewClientJourX('')
       await loadClients()
     }
     setAddingClient(false)
@@ -308,6 +320,8 @@ export default function AdminPage() {
     } else {
       setNewHabitName('')
       setHabits(prev => [...prev, json.habit])
+      setHabitMsg(`✓ Apparaîtra sur le dashboard de ${selectedClient?.first_name}`)
+      setTimeout(() => setHabitMsg(null), 4000)
     }
     setAddingHabit(false)
   }
@@ -395,7 +409,7 @@ export default function AdminPage() {
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'clients', label: 'Clients' },
-    { key: 'missions', label: 'Missions' },
+    { key: 'missions', label: 'Habitudes & Missions' },
     { key: 'todos', label: 'To-do' },
     { key: 'programme', label: 'Programme' },
     { key: 'configuration', label: 'Config' },
@@ -658,7 +672,7 @@ export default function AdminPage() {
               </summary>
               <div style={{ padding: '0 20px 20px', borderTop: '1px solid #1E1E1E' }}>
                 <p style={{ fontSize: 12, color: '#484848', margin: '16px 0 16px', lineHeight: 1.5 }}>
-                  Fallback si Stripe ne déclenche pas le webhook. Crée le compte + envoie l&apos;email de bienvenue.
+                  Crée le compte + envoie l&apos;email de bienvenue. Pour un client existant, indique son Jour X actuel.
                 </p>
                 <form onSubmit={handleAddClient} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                   <div style={{ display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
@@ -683,6 +697,15 @@ export default function AdminPage() {
                       value={newClientEmail}
                       onChange={e => setNewClientEmail(e.target.value)}
                       required
+                      style={inputStyle}
+                    />
+                    <input
+                      type="number"
+                      placeholder="Jour X (défaut: 1)"
+                      value={newClientJourX}
+                      onChange={e => setNewClientJourX(e.target.value)}
+                      min="1"
+                      max="180"
                       style={inputStyle}
                     />
                   </div>
@@ -751,8 +774,26 @@ export default function AdminPage() {
                         {selectedClient?.first_name} {selectedClient?.last_name}
                       </div>
                       <div style={{ fontSize: 10, color: '#3A86FF', letterSpacing: '0.1em', fontWeight: 700 }}>
-                        {habits.filter(h => h.is_active).length} mission{habits.filter(h => h.is_active).length !== 1 ? 's' : ''} active{habits.filter(h => h.is_active).length !== 1 ? 's' : ''}
+                        {habits.filter(h => h.is_active && h.category === 'habit').length} habitude{habits.filter(h => h.is_active && h.category === 'habit').length !== 1 ? 's' : ''} · {habits.filter(h => h.is_active && h.category === 'mission').length} mission{habits.filter(h => h.is_active && h.category === 'mission').length !== 1 ? 's' : ''}
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Explication habitude vs mission */}
+                  <div style={{
+                    padding: '14px 16px', borderRadius: 10,
+                    background: 'rgba(255,255,255,0.02)', border: '1px solid #1E1E1E',
+                    display: 'flex', flexDirection: 'column', gap: 6,
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 14 }}>✅</span>
+                      <span style={{ fontSize: 12, color: '#6098FF', fontWeight: 600 }}>HABITUDE</span>
+                      <span style={{ fontSize: 12, color: '#484848' }}>= action quotidienne récurrente (checkbox chaque jour)</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 14 }}>🎯</span>
+                      <span style={{ fontSize: 12, color: '#FFA032', fontWeight: 600 }}>MISSION</span>
+                      <span style={{ fontSize: 12, color: '#484848' }}>= objectif one-shot avec progression (0-100%)</span>
                     </div>
                   </div>
 
@@ -798,6 +839,9 @@ export default function AdminPage() {
                   {habitErr && (
                     <div style={{ fontSize: 13, color: '#f97373', background: '#1a0000', border: '1px solid #7f1d1d', borderRadius: 10, padding: '10px 14px' }}>{habitErr}</div>
                   )}
+                  {habitMsg && (
+                    <div style={{ fontSize: 13, color: '#22c55e', background: '#001a00', border: '1px solid #16a34a', borderRadius: 10, padding: '10px 14px' }}>{habitMsg}</div>
+                  )}
 
                   {/* Habits list */}
                   {loadingHabits ? (
@@ -810,69 +854,145 @@ export default function AdminPage() {
                       </div>
                     </div>
                   ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      {habits.map((habit, i) => (
-                        <div
-                          key={habit.id}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: 12,
-                            padding: '12px 14px', borderRadius: 10,
-                            border: `1px solid ${habit.is_active ? 'rgba(58,134,255,0.25)' : '#1A1A1A'}`,
-                            background: habit.is_active ? 'rgba(58,134,255,0.04)' : '#080808',
-                          }}
-                        >
-                          {/* Order indicator */}
-                          <span style={{ fontSize: 10, color: '#333', fontWeight: 700, width: 16, textAlign: 'center', flexShrink: 0 }}>
-                            {String(i + 1).padStart(2, '0')}
-                          </span>
-                          <span style={{
-                            flex: 1, fontSize: 13, fontWeight: 500,
-                            color: habit.is_active ? '#F5F5F5' : '#484848',
-                            textDecoration: habit.is_active ? 'none' : 'line-through',
-                          }}>
-                            {habit.name}
-                          </span>
-                          <span style={{
-                            padding: '2px 8px', borderRadius: 5, fontSize: 10, fontWeight: 700,
-                            letterSpacing: '0.08em', textTransform: 'uppercase', flexShrink: 0,
-                            background: habit.category === 'mission'
-                              ? 'rgba(255, 160, 50, 0.12)'
-                              : 'rgba(58, 134, 255, 0.12)',
-                            color: habit.category === 'mission' ? '#FFA032' : '#6098FF',
-                            border: `1px solid ${habit.category === 'mission' ? 'rgba(255,160,50,0.25)' : 'rgba(58,134,255,0.25)'}`,
-                          }}>
-                            {habit.category === 'mission' ? 'Mission' : 'Habitude'}
-                          </span>
-                          <button
-                            onClick={() => handleToggleHabit(habit)}
-                            style={{
-                              padding: '4px 12px', borderRadius: 6, border: 'none',
-                              cursor: 'pointer', fontSize: 10, fontWeight: 700,
-                              letterSpacing: '0.1em', textTransform: 'uppercase',
-                              background: habit.is_active ? 'rgba(58,134,255,0.2)' : '#1E1E1E',
-                              color: habit.is_active ? '#6098FF' : '#484848',
-                              transition: 'all 0.15s',
-                            }}
-                          >
-                            {habit.is_active ? 'Active' : 'Inactive'}
-                          </button>
-                          <button
-                            onClick={() => handleDeleteHabit(habit.id)}
-                            title="Supprimer"
-                            style={{
-                              width: 28, height: 28, borderRadius: 7, border: '1px solid transparent',
-                              background: 'transparent', cursor: 'pointer',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              color: '#333', transition: 'all 0.15s',
-                              flexShrink: 0,
-                            }}
-                          >
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-                            </svg>
-                          </button>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                      {/* Habitudes */}
+                      {habits.filter(h => h.category === 'habit').length > 0 && (
+                        <div style={{ marginBottom: 4 }}>
+                          <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#6098FF', marginBottom: 8 }}>
+                            Habitudes quotidiennes
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            {habits.filter(h => h.category === 'habit').map((habit, i) => (
+                              <div
+                                key={habit.id}
+                                style={{
+                                  display: 'flex', alignItems: 'center', gap: 12,
+                                  padding: '12px 14px', borderRadius: 10,
+                                  border: `1px solid ${habit.is_active ? 'rgba(58,134,255,0.25)' : '#1A1A1A'}`,
+                                  background: habit.is_active ? 'rgba(58,134,255,0.04)' : '#080808',
+                                }}
+                              >
+                                <span style={{ fontSize: 10, color: '#333', fontWeight: 700, width: 16, textAlign: 'center', flexShrink: 0 }}>
+                                  {String(i + 1).padStart(2, '0')}
+                                </span>
+                                <span style={{
+                                  flex: 1, fontSize: 13, fontWeight: 500,
+                                  color: habit.is_active ? '#F5F5F5' : '#484848',
+                                  textDecoration: habit.is_active ? 'none' : 'line-through',
+                                }}>
+                                  {habit.name}
+                                </span>
+                                <span style={{
+                                  padding: '2px 8px', borderRadius: 5, fontSize: 10, fontWeight: 700,
+                                  letterSpacing: '0.08em', textTransform: 'uppercase', flexShrink: 0,
+                                  background: 'rgba(58, 134, 255, 0.12)',
+                                  color: '#6098FF',
+                                  border: '1px solid rgba(58,134,255,0.25)',
+                                }}>
+                                  Habitude
+                                </span>
+                                <button
+                                  onClick={() => handleToggleHabit(habit)}
+                                  style={{
+                                    padding: '4px 12px', borderRadius: 6, border: 'none',
+                                    cursor: 'pointer', fontSize: 10, fontWeight: 700,
+                                    letterSpacing: '0.1em', textTransform: 'uppercase',
+                                    background: habit.is_active ? 'rgba(58,134,255,0.2)' : '#1E1E1E',
+                                    color: habit.is_active ? '#6098FF' : '#484848',
+                                    transition: 'all 0.15s',
+                                  }}
+                                >
+                                  {habit.is_active ? 'Active' : 'Inactive'}
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteHabit(habit.id)}
+                                  title="Supprimer"
+                                  style={{
+                                    width: 28, height: 28, borderRadius: 7, border: '1px solid transparent',
+                                    background: 'transparent', cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    color: '#333', transition: 'all 0.15s',
+                                    flexShrink: 0,
+                                  }}
+                                >
+                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                                  </svg>
+                                </button>
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      ))}
+                      )}
+                      {/* Missions */}
+                      {habits.filter(h => h.category === 'mission').length > 0 && (
+                        <div>
+                          <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#FFA032', marginBottom: 8 }}>
+                            Missions
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            {habits.filter(h => h.category === 'mission').map((habit, i) => (
+                              <div
+                                key={habit.id}
+                                style={{
+                                  display: 'flex', alignItems: 'center', gap: 12,
+                                  padding: '12px 14px', borderRadius: 10,
+                                  border: `1px solid ${habit.is_active ? 'rgba(255,160,50,0.25)' : '#1A1A1A'}`,
+                                  background: habit.is_active ? 'rgba(255,160,50,0.04)' : '#080808',
+                                }}
+                              >
+                                <span style={{ fontSize: 10, color: '#333', fontWeight: 700, width: 16, textAlign: 'center', flexShrink: 0 }}>
+                                  {String(i + 1).padStart(2, '0')}
+                                </span>
+                                <span style={{
+                                  flex: 1, fontSize: 13, fontWeight: 500,
+                                  color: habit.is_active ? '#F5F5F5' : '#484848',
+                                  textDecoration: habit.is_active ? 'none' : 'line-through',
+                                }}>
+                                  {habit.name}
+                                </span>
+                                <span style={{
+                                  padding: '2px 8px', borderRadius: 5, fontSize: 10, fontWeight: 700,
+                                  letterSpacing: '0.08em', textTransform: 'uppercase', flexShrink: 0,
+                                  background: 'rgba(255, 160, 50, 0.12)',
+                                  color: '#FFA032',
+                                  border: '1px solid rgba(255,160,50,0.25)',
+                                }}>
+                                  Mission
+                                </span>
+                                <button
+                                  onClick={() => handleToggleHabit(habit)}
+                                  style={{
+                                    padding: '4px 12px', borderRadius: 6, border: 'none',
+                                    cursor: 'pointer', fontSize: 10, fontWeight: 700,
+                                    letterSpacing: '0.1em', textTransform: 'uppercase',
+                                    background: habit.is_active ? 'rgba(58,134,255,0.2)' : '#1E1E1E',
+                                    color: habit.is_active ? '#6098FF' : '#484848',
+                                    transition: 'all 0.15s',
+                                  }}
+                                >
+                                  {habit.is_active ? 'Active' : 'Inactive'}
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteHabit(habit.id)}
+                                  title="Supprimer"
+                                  style={{
+                                    width: 28, height: 28, borderRadius: 7, border: '1px solid transparent',
+                                    background: 'transparent', cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    color: '#333', transition: 'all 0.15s',
+                                    flexShrink: 0,
+                                  }}
+                                >
+                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                                  </svg>
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1069,6 +1189,32 @@ export default function AdminPage() {
         {/* ══ Tab: Programme ══ */}
         {activeTab === 'programme' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {/* Client selector */}
+            <div style={{ borderRadius: 14, border: '1px solid #1E1E1E', background: '#0F0F0F', overflow: 'hidden' }}>
+              <div style={{ padding: '20px' }}>
+                <label style={{ display: 'block', fontSize: 10, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#484848', marginBottom: 8 }}>
+                  Programme de
+                </label>
+                <select
+                  value={programClientId}
+                  onChange={e => setProgramClientId(e.target.value)}
+                  style={{ ...inputStyle, cursor: 'pointer' }}
+                >
+                  <option value="">— Template de base (global) —</option>
+                  {clients.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.first_name} {c.last_name} ({c.email})
+                    </option>
+                  ))}
+                </select>
+                <div style={{ fontSize: 11, color: '#484848', marginTop: 8 }}>
+                  {programClientId
+                    ? `Programme personnalisé pour ${clients.find(c => c.id === programClientId)?.first_name || 'ce client'}.`
+                    : 'Le template de base est visible par les clients qui n\'ont pas de programme personnalisé.'}
+                </div>
+              </div>
+            </div>
+
             {programMsg && (
               <div style={{
                 fontSize: 13,

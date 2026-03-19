@@ -145,6 +145,46 @@ export function WelcomeOverlay() {
           </div>
         </div>
 
+        {/* Section 4: Installation mobile */}
+        <div style={{ marginBottom: 32 }}>
+          <div style={{ ...D, fontWeight: 800, fontSize: '13px', letterSpacing: '0.15em', textTransform: 'uppercase' as const, color: C.accent, marginBottom: 14, textAlign: 'center' as const }}>
+            Installe l'app sur ton téléphone
+          </div>
+          <p style={{ ...D, fontWeight: 500, fontSize: '15px', color: C.muted, marginBottom: 12, lineHeight: 1.5, textAlign: 'center' }}>
+            Projet180 s'installe comme une vraie app sur ton écran d'accueil.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{
+              padding: '12px 14px',
+              background: C.bg,
+              border: `1px solid ${C.border}`,
+              borderRadius: 10,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                <span style={{ fontSize: '18px' }}>🍎</span>
+                <span style={{ ...D, fontWeight: 700, fontSize: '14px', color: C.text }}>iPhone / iPad</span>
+              </div>
+              <div style={{ ...D, fontSize: '13px', color: C.muted, lineHeight: 1.6, paddingLeft: 28 }}>
+                Safari → <span style={{ color: C.text }}>Partager</span> (↑) → <span style={{ color: C.text }}>Sur l'écran d'accueil</span>
+              </div>
+            </div>
+            <div style={{
+              padding: '12px 14px',
+              background: C.bg,
+              border: `1px solid ${C.border}`,
+              borderRadius: 10,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                <span style={{ fontSize: '18px' }}>🤖</span>
+                <span style={{ ...D, fontWeight: 700, fontSize: '14px', color: C.text }}>Android</span>
+              </div>
+              <div style={{ ...D, fontSize: '13px', color: C.muted, lineHeight: 1.6, paddingLeft: 28 }}>
+                Chrome → <span style={{ color: C.text }}>Menu</span> (⋮) → <span style={{ color: C.text }}>Ajouter à l'écran d'accueil</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* CTA */}
         <P180Button onClick={handleDismiss} fullWidth size="lg">
           C'est parti !

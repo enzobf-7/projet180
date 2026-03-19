@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { sendEmail, p180EmailTemplate } from '@/lib/email'
 import Anthropic from '@anthropic-ai/sdk'
 
 export async function GET(request: NextRequest) {
@@ -54,7 +55,7 @@ export async function GET(request: NextRequest) {
     // 3. Fetch client first name for personalised AI message
     const { data: profileData } = await admin
       .from('profiles')
-      .select('first_name')
+      .select('first_name, email')
       .eq('id', clientId)
       .maybeSingle()
 
@@ -148,6 +149,34 @@ XP total accumulé : ${xpTotal} XP
       errors.push(`${clientId}: ${insertErr.message}`)
     } else {
       generated++
+
+      // Send weekly report email if AI summary was generated
+      if (aiSummary && profileData?.email) {
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://projet180.vercel.app'
+        const firstName = profileData.first_name || 'toi'
+        try {
+          await sendEmail({
+            to: profileData.email,
+            toName: firstName,
+            subject: `Ton bilan semaine ${weekNumber} — Projet180`,
+            html: p180EmailTemplate(`
+              <p style="color: #3A86FF; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Bilan semaine ${weekNumber} / 26</p>
+              <h1 style="font-size: 22px; margin-bottom: 24px;">${firstName}.</h1>
+              <p style="color: #888; line-height: 1.8; white-space: pre-line;">
+                ${aiSummary}
+              </p>
+              <a href="${appUrl}/dashboard" style="display: inline-block; background: #3A86FF; color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; margin-top: 24px;">
+                Voir mon dashboard
+              </a>
+              <p style="color: #484848; font-size: 13px; margin-top: 32px;">
+                — Robin, Projet180
+              </p>
+            `),
+          })
+        } catch (emailErr) {
+          console.error(`Weekly report email failed for ${clientId}:`, emailErr)
+        }
+      }
     }
   }
 

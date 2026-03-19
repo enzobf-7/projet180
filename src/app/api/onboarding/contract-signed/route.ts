@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { sendEmail, p180EmailTemplate } from '@/lib/email'
 
 export async function POST() {
   const supabase = await createClient()
@@ -31,40 +32,31 @@ export async function POST() {
     : new Date().toLocaleString('fr-FR', { dateStyle: 'long', timeStyle: 'short', timeZone: 'Europe/Paris' })
 
   try {
-    await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: {
-        accept: 'application/json',
-        'api-key': process.env.BREVO_API_KEY!,
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        sender: { name: 'Projet180', email: 'noreply@projet180.fr' },
-        to: [{ email: coachEmail, name: 'Robin' }],
-        subject: `${clientName} vient de signer son contrat`,
-        htmlContent: `
-          <div style="font-family: -apple-system, sans-serif; max-width: 500px; margin: 0 auto; color: #F2F2F5; background: #060606; padding: 40px 30px; border-radius: 16px;">
-            <p style="color: #3A86FF; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Contrat signé</p>
-            <h1 style="font-size: 22px; margin-bottom: 16px;">${clientName} a signé.</h1>
-            <p style="color: #888; line-height: 1.7;">
-              Ton client vient de lire et signer son contrat d'engagement dans Projet180.
-            </p>
-            <div style="background: #0F0F0F; border: 1px solid #1E1E1E; border-radius: 12px; padding: 20px; margin: 24px 0;">
-              <p style="margin: 0 0 4px; color: #484848; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Client</p>
-              <p style="margin: 0 0 12px; color: #F2F2F5; font-size: 16px;">${clientName}</p>
-              <p style="margin: 0 0 4px; color: #484848; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Email</p>
-              <p style="margin: 0 0 12px; color: #F2F2F5; font-size: 16px;">${clientEmail}</p>
-              <p style="margin: 0 0 4px; color: #484848; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Signature</p>
-              <p style="margin: 0 0 12px; color: #F2F2F5; font-size: 16px; font-style: italic;">${signatureName}</p>
-              <p style="margin: 0 0 4px; color: #484848; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Date</p>
-              <p style="margin: 0; color: #F2F2F5; font-size: 14px;">${signedAt} (Paris)</p>
-            </div>
-            <p style="color: #484848; font-size: 13px; margin-top: 32px;">
-              — Projet180
-            </p>
-          </div>
-        `,
-      }),
+    await sendEmail({
+      to: coachEmail,
+      toName: 'Robin',
+      subject: `${clientName} vient de signer son contrat`,
+      senderName: 'Projet180',
+      html: p180EmailTemplate(`
+        <p style="color: #3A86FF; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Contrat signé</p>
+        <h1 style="font-size: 22px; margin-bottom: 16px;">${clientName} a signé.</h1>
+        <p style="color: #888; line-height: 1.7;">
+          Ton client vient de lire et signer son contrat d'engagement dans Projet180.
+        </p>
+        <div style="background: #0F0F0F; border: 1px solid #1E1E1E; border-radius: 12px; padding: 20px; margin: 24px 0;">
+          <p style="margin: 0 0 4px; color: #484848; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Client</p>
+          <p style="margin: 0 0 12px; color: #F2F2F5; font-size: 16px;">${clientName}</p>
+          <p style="margin: 0 0 4px; color: #484848; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Email</p>
+          <p style="margin: 0 0 12px; color: #F2F2F5; font-size: 16px;">${clientEmail}</p>
+          <p style="margin: 0 0 4px; color: #484848; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Signature</p>
+          <p style="margin: 0 0 12px; color: #F2F2F5; font-size: 16px; font-style: italic;">${signatureName}</p>
+          <p style="margin: 0 0 4px; color: #484848; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Date</p>
+          <p style="margin: 0; color: #F2F2F5; font-size: 14px;">${signedAt} (Paris)</p>
+        </div>
+        <p style="color: #484848; font-size: 13px; margin-top: 32px;">
+          — Projet180
+        </p>
+      `),
     })
   } catch (err) {
     console.error('Contract-signed notification failed:', err)

@@ -10,7 +10,7 @@ import { C, D } from '@/lib/design-tokens'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type Step = 1 | 2 | 3 | 4 | 5
+type Step = 1 | 2 | 3
 
 interface OnboardingProgress {
   step1_contract: boolean
@@ -108,12 +108,10 @@ export default function OnboardingPage() {
           step4_skool: prog.step4_skool || false,
           step5_call: prog.step5_call || false,
         })
-        // Set current step to first incomplete
+        // Set current step to first incomplete (3 steps: Contrat, Questionnaire, Call)
         if (!prog.step1_contract) setCurrentStep(1)
         else if (!prog.step2_questionnaire) setCurrentStep(2)
-        else if (!prog.step3_whatsapp) setCurrentStep(3)
-        else if (!prog.step4_skool) setCurrentStep(4)
-        else if (!prog.step5_call) setCurrentStep(5)
+        else if (!prog.step5_call) setCurrentStep(3)
         else { router.push('/dashboard'); return }
       }
 
@@ -150,7 +148,7 @@ export default function OnboardingPage() {
     load()
   }, [])
 
-  const allPrev4Done = progress.step1_contract && progress.step2_questionnaire && progress.step3_whatsapp && progress.step4_skool
+  const allPrevDone = progress.step1_contract && progress.step2_questionnaire
 
   // ── Mark step complete ──
   async function markStep(step: keyof OnboardingProgress) {
@@ -187,23 +185,17 @@ export default function OnboardingPage() {
       submitted_at: new Date().toISOString()
     })
     await markStep('step2_questionnaire')
+    // Auto-mark removed steps (WhatsApp & Skool) so DB stays consistent
+    await supabase.from('onboarding_progress').update({
+      step3_whatsapp: true,
+      step4_skool: true,
+    }).eq('user_id', userId)
+    setProgress(prev => ({ ...prev, step2_questionnaire: true, step3_whatsapp: true, step4_skool: true }))
     setCurrentStep(3)
     setLoading(false)
   }
 
-  // ── Step 3/4 — Links ──
-  async function handleLinkClick(step: 'step3_whatsapp' | 'step4_skool', url: string, next: Step) {
-    const safeUrl = url?.trim()
-    // Open link only if configured — step is marked done either way
-    if (safeUrl && safeUrl !== '#') {
-      window.open(safeUrl, '_blank')
-    }
-    await markStep(step)
-    setProgress(prev => ({ ...prev, [step]: true }))
-    setTimeout(() => setCurrentStep(next), 600)
-  }
-
-  // ── Step 5 — Call ──
+  // ── Step 3 — Call ──
   async function handleBookCall() {
     const safeUrl = settings.iclosed_link?.trim()
     if (safeUrl && safeUrl !== '#') {
@@ -214,7 +206,10 @@ export default function OnboardingPage() {
     if (userId) {
       await supabase
         .from('onboarding_progress')
-        .update({ completed_at: new Date().toISOString() })
+        .update({
+          step5_call: true,
+          completed_at: new Date().toISOString(),
+        })
         .eq('user_id', userId)
     }
     setRedirecting(true)
@@ -243,7 +238,7 @@ export default function OnboardingPage() {
       <div className="bg-[#0F0F0F] border-b border-[#1E1E1E]">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex gap-2">
-            {([1,2,3,4,5] as Step[]).map(s => (
+            {([1,2,3] as Step[]).map(s => (
               <div
                 key={s}
                 className="h-2 flex-1 rounded-full transition-all duration-500"
@@ -251,9 +246,7 @@ export default function OnboardingPage() {
                   backgroundColor:
                     (s === 1 && progress.step1_contract) ||
                     (s === 2 && progress.step2_questionnaire) ||
-                    (s === 3 && progress.step3_whatsapp) ||
-                    (s === 4 && progress.step4_skool) ||
-                    (s === 5 && progress.step5_call)
+                    (s === 3 && progress.step5_call)
                       ? '#3A86FF'
                       : s === currentStep
                       ? '#2B75EE'
@@ -273,15 +266,18 @@ export default function OnboardingPage() {
         <StepNav
           currentStep={currentStep}
           progress={progress}
-          allPrev4Done={allPrev4Done}
+          allPrevDone={allPrevDone}
           onStepClick={(s) => {
-            const stepKey = `step${s}_${['contract','questionnaire','whatsapp','skool','call'][s-1]}` as keyof OnboardingProgress
+            const stepKeys: Record<number, keyof OnboardingProgress> = {
+              1: 'step1_contract',
+              2: 'step2_questionnaire',
+              3: 'step5_call',
+            }
+            const stepKey = stepKeys[s]
             const accessible =
               s === 1 ||
               (s === 2 && progress.step1_contract) ||
-              (s === 3 && progress.step2_questionnaire) ||
-              (s === 4 && progress.step3_whatsapp) ||
-              (s === 5 && allPrev4Done)
+              (s === 3 && allPrevDone)
             if (progress[stepKey] || s === currentStep || accessible) setCurrentStep(s)
           }}
         />
@@ -315,34 +311,8 @@ export default function OnboardingPage() {
           />
         )}
         {currentStep === 3 && (
-          <Step3Link
-            title="Rejoins le groupe WhatsApp"
-            description="Le groupe privé des membres Projet180."
-            details="Espace d'échanges quotidiens, accountability entre membres et annonces importantes de Robin."
-            icon="💬"
-            cta="Rejoindre le groupe"
-            url={settings.whatsapp_link}
-            done={progress.step3_whatsapp}
-            onConfirm={() => handleLinkClick('step3_whatsapp', settings.whatsapp_link, 4)}
-            onContinue={() => setCurrentStep(4)}
-          />
-        )}
-        {currentStep === 4 && (
-          <Step3Link
-            title="Accède à la communauté Skool"
-            description="La plateforme vidéo & communauté du programme."
-            details="Masterclasses, replays, modules d'entraînement et espace communautaire centralisé."
-            icon="🎓"
-            cta="Accéder à Skool"
-            url={settings.skool_link}
-            done={progress.step4_skool}
-            onConfirm={() => handleLinkClick('step4_skool', settings.skool_link, 5)}
-            onContinue={() => setCurrentStep(5)}
-          />
-        )}
-        {currentStep === 5 && (
           <Step5Call
-            unlocked={allPrev4Done}
+            unlocked={allPrevDone}
             url={settings.iclosed_link}
             done={progress.step5_call}
             onBook={handleBookCall}
@@ -360,20 +330,18 @@ export default function OnboardingPage() {
 function StepNav({
   currentStep,
   progress,
-  allPrev4Done,
+  allPrevDone,
   onStepClick
 }: {
   currentStep: Step
   progress: OnboardingProgress
-  allPrev4Done: boolean
+  allPrevDone: boolean
   onStepClick: (s: Step) => void
 }) {
   const steps = [
     { n: 1 as Step, label: 'Contrat', done: progress.step1_contract },
     { n: 2 as Step, label: 'Questionnaire', done: progress.step2_questionnaire },
-    { n: 3 as Step, label: 'WhatsApp', done: progress.step3_whatsapp },
-    { n: 4 as Step, label: 'Skool', done: progress.step4_skool },
-    { n: 5 as Step, label: 'Premier call', done: progress.step5_call, locked: !allPrev4Done },
+    { n: 3 as Step, label: 'Premier call', done: progress.step5_call, locked: !allPrevDone },
   ]
 
   return (
@@ -720,52 +688,7 @@ function QSection7({ q, setQ, sectionNum, totalSections }: { q: typeof initialQu
   )
 }
 
-// ─── Step 3 & 4 — Link Steps ──────────────────────────────────────────────────
-
-function Step3Link({
-  title, description, details, icon, cta, url, done, onConfirm, onContinue
-}: {
-  title: string
-  description: string
-  details?: string
-  icon: string
-  cta: string
-  url: string
-  done: boolean
-  onConfirm: () => void
-  onContinue: () => void
-}) {
-  if (done) return <StepDone label={title} onContinue={onContinue} />
-
-  const hasLink = !!url && url.trim() !== '' && url.trim() !== '#'
-
-  return (
-    <div className="space-y-6">
-      <StepHeader
-        number={icon}
-        title={title}
-        subtitle={description}
-      />
-
-      <div className="rounded-xl p-6 text-center space-y-4" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
-        <div className="text-7xl">{icon}</div>
-        <p className="text-base leading-relaxed uppercase tracking-wider" style={{ ...D, color: C.muted }}>{details ?? description}</p>
-        <p className="text-base leading-relaxed uppercase tracking-wider" style={{ ...D, color: C.muted }}>
-          {hasLink
-            ? "Le lien s'ouvre dans un nouvel onglet. Cette étape sera automatiquement validée."
-            : "Le lien n'est pas encore configuré par Robin. Tu peux passer pour l'instant."}
-        </p>
-        <div className="max-w-md mx-auto">
-          <P180Button onClick={onConfirm} fullWidth>
-            {hasLink ? `${cta} →` : 'Passer cette étape →'}
-          </P180Button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ─── Step 5 — Réserver son call ───────────────────────────────────────────────
+// ─── Step 3 — Réserver son call ───────────────────────────────────────────────
 
 function Step5Call({
   unlocked, url, done, onBook
@@ -793,15 +716,15 @@ function Step5Call({
         title="Réserve ton premier call"
         subtitle={unlocked
           ? "Toutes tes étapes sont complétées. Tu peux maintenant réserver ton premier call avec Robin."
-          : "Cette étape se débloque une fois les 4 étapes précédentes complétées."
+          : "Cette étape se débloque une fois les 2 étapes précédentes complétées."
         }
       />
 
       {!unlocked ? (
         <div className="rounded-xl p-8 text-center space-y-4" style={{ background: C.surface, border: `1px solid ${C.border}` }}>
-          <p className="text-base uppercase tracking-wider" style={{ ...D, color: C.muted }}>Complete les étapes 1 à 4 pour débloquer la réservation.</p>
+          <p className="text-base uppercase tracking-wider" style={{ ...D, color: C.muted }}>Complete les étapes 1 et 2 pour débloquer la réservation.</p>
           <div className="space-y-2 text-left mt-4">
-            {['Contrat signé', 'Questionnaire rempli', 'WhatsApp rejoint', 'Skool rejoint'].map((l, i) => (
+            {['Contrat signé', 'Questionnaire rempli'].map((l, i) => (
               <p key={i} className="text-base flex items-center gap-2 uppercase tracking-wider" style={{ ...D, color: C.muted }}>
                 <span style={{ color: C.accent }}>→</span> {l}
               </p>

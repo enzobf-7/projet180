@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { sendEmail, p180EmailTemplate } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
   if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_WEBHOOK_SECRET) {
@@ -74,7 +75,34 @@ export async function POST(request: NextRequest) {
       { client_id: userId, title: 'Poster wins de la semaine', is_system: true, day_of_week: 0 },
     ])
 
-    await sendWelcomeEmail(email, firstName, tempPassword)
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://projet180.vercel.app'
+    await sendEmail({
+      to: email,
+      toName: firstName,
+      subject: 'Bienvenue dans Projet180',
+      html: p180EmailTemplate(`
+        <h1 style="font-size: 24px; margin-bottom: 20px;">Bienvenue ${firstName}.</h1>
+        <p style="color: #888; line-height: 1.7;">
+          Tu viens de rejoindre Projet180. La transformation commence maintenant.
+        </p>
+        <p style="color: #888; line-height: 1.7;">
+          Connecte-toi et complète tes étapes de pré-onboarding.
+          Une fois terminé, le lien pour réserver ton premier call avec moi se débloque.
+        </p>
+        <div style="background: #0F0F0F; border: 1px solid #1E1E1E; border-radius: 12px; padding: 20px; margin: 24px 0;">
+          <p style="margin: 0 0 8px; color: #888; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Tes accès</p>
+          <p style="margin: 4px 0; color: #F5F5F5;"><strong>Email :</strong> ${email}</p>
+          <p style="margin: 4px 0; color: #F5F5F5;"><strong>Mot de passe :</strong> ${tempPassword}</p>
+          <p style="margin: 8px 0 0; color: #888; font-size: 12px;">Change ton mot de passe après ta première connexion.</p>
+        </div>
+        <a href="${appUrl}" style="display: inline-block; background: #3A86FF; color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; margin-top: 8px;">
+          Accéder à ma plateforme
+        </a>
+        <p style="color: #555; font-size: 13px; margin-top: 32px;">
+          — Robin, Projet180
+        </p>
+      `),
+    })
 
     console.log(`New client created: ${email} (${firstName} ${lastName})`)
   }
@@ -89,50 +117,4 @@ function generateTempPassword(): string {
     password += chars.charAt(Math.floor(Math.random() * chars.length))
   }
   return password
-}
-
-async function sendWelcomeEmail(email: string, firstName: string, password: string) {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://projet180.vercel.app'
-
-  try {
-    await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: {
-        'accept': 'application/json',
-        'api-key': process.env.BREVO_API_KEY!,
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        sender: { name: 'Robin — Projet180', email: 'noreply@projet180.fr' },
-        to: [{ email, name: firstName }],
-        subject: 'Bienvenue dans Projet180',
-        htmlContent: `
-          <div style="font-family: -apple-system, sans-serif; max-width: 500px; margin: 0 auto; color: #F5F5F5; background: #060606; padding: 40px 30px; border-radius: 16px;">
-            <h1 style="font-size: 24px; margin-bottom: 20px;">Bienvenue ${firstName}.</h1>
-            <p style="color: #888; line-height: 1.7;">
-              Tu viens de rejoindre Projet180. La transformation commence maintenant.
-            </p>
-            <p style="color: #888; line-height: 1.7;">
-              Connecte-toi et complète tes étapes de pré-onboarding. 
-              Une fois terminé, le lien pour réserver ton premier call avec moi se débloque.
-            </p>
-            <div style="background: #0F0F0F; border: 1px solid #1E1E1E; border-radius: 12px; padding: 20px; margin: 24px 0;">
-              <p style="margin: 0 0 8px; color: #888; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Tes accès</p>
-              <p style="margin: 4px 0; color: #F5F5F5;"><strong>Email :</strong> ${email}</p>
-              <p style="margin: 4px 0; color: #F5F5F5;"><strong>Mot de passe :</strong> ${password}</p>
-              <p style="margin: 8px 0 0; color: #888; font-size: 12px;">Change ton mot de passe après ta première connexion.</p>
-            </div>
-            <a href="${appUrl}" style="display: inline-block; background: #3A86FF; color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; margin-top: 8px;">
-              Accéder à ma plateforme
-            </a>
-            <p style="color: #555; font-size: 13px; margin-top: 32px;">
-              — Robin, Projet180
-            </p>
-          </div>
-        `,
-      }),
-    })
-  } catch (err) {
-    console.error('Error sending welcome email:', err)
-  }
 }
