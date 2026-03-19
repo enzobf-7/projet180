@@ -220,7 +220,7 @@ export default function OnboardingPage() {
   }
 
   if (pageLoading) return <LoadingScreen />
-  if (redirecting) return <RedirectScreen onDone={() => router.push('/dashboard')} />
+  if (redirecting) return <RedirectScreen onDone={() => router.push('/set-password')} />
 
   return (
     <div className="min-h-screen bg-[#060606] text-[#F5F5F5] flex flex-col" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>

@@ -68,9 +68,40 @@ export async function updateSession(request: NextRequest) {
         .eq('user_id', user.id)
         .single()
 
-      url.pathname = onboarding?.completed_at ? '/dashboard' : '/onboarding'
+      if (!onboarding?.completed_at) {
+        url.pathname = '/onboarding'
+      } else if (!user.user_metadata?.password_changed) {
+        url.pathname = '/set-password'
+      } else {
+        url.pathname = '/dashboard'
+      }
     }
 
+    return NextResponse.redirect(url)
+  }
+
+  // Block clients who haven't set password from accessing app pages
+  if (user && !path.startsWith('/admin') && path !== '/set-password' && path !== '/onboarding' && path !== '/') {
+    const needsPassword = user.user_metadata?.role === 'client' && !user.user_metadata?.password_changed
+    if (needsPassword) {
+      const admin = createAdminClient()
+      const { data: onboarding } = await admin
+        .from('onboarding_progress')
+        .select('completed_at')
+        .eq('user_id', user.id)
+        .single()
+      if (onboarding?.completed_at) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/set-password'
+        return NextResponse.redirect(url)
+      }
+    }
+  }
+
+  // Redirect away from /set-password if already changed
+  if (user && path === '/set-password' && user.user_metadata?.password_changed) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/dashboard'
     return NextResponse.redirect(url)
   }
 

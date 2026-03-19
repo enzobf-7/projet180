@@ -49,7 +49,15 @@ export async function sendEmail({
   }
 }
 
-/** Template wrapper P180 — dark design cohérent */
+/** Template wrapper P180 — bandeau noir + logo blanc, style naturel */
 export function p180EmailTemplate(body: string): string {
-  return `<div style="font-family: -apple-system, sans-serif; max-width: 500px; margin: 0 auto; color: #F2F2F5; background: #060606; padding: 40px 30px; border-radius: 16px;">${body}</div>`
+  // TODO: remplacer par l'URL du domaine prod quand configuré (app.projet180.fr/logo-projet180.png)
+  const logoUrl = 'https://i.imgur.com/PuZnBsX.png'
+
+  return `
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 0;">
+  <div style="padding: 32px 24px 40px; color: #1a1a1a; font-size: 15px; line-height: 1.7;">
+    ${body}
+  </div>
+</div>`
 }

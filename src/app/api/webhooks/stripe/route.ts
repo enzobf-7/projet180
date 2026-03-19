@@ -75,32 +75,22 @@ export async function POST(request: NextRequest) {
       { client_id: userId, title: 'Poster wins de la semaine', is_system: true, day_of_week: 0 },
     ])
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://projet180.vercel.app'
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.projet180.fr'
     await sendEmail({
       to: email,
       toName: firstName,
       subject: 'Bienvenue dans Projet180',
       html: p180EmailTemplate(`
-        <h1 style="font-size: 24px; margin-bottom: 20px;">Bienvenue ${firstName}.</h1>
-        <p style="color: #888; line-height: 1.7;">
-          Tu viens de rejoindre Projet180. La transformation commence maintenant.
-        </p>
-        <p style="color: #888; line-height: 1.7;">
-          Connecte-toi et complète tes étapes de pré-onboarding.
-          Une fois terminé, le lien pour réserver ton premier call avec moi se débloque.
-        </p>
-        <div style="background: #0F0F0F; border: 1px solid #1E1E1E; border-radius: 12px; padding: 20px; margin: 24px 0;">
-          <p style="margin: 0 0 8px; color: #888; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Tes accès</p>
-          <p style="margin: 4px 0; color: #F5F5F5;"><strong>Email :</strong> ${email}</p>
-          <p style="margin: 4px 0; color: #F5F5F5;"><strong>Mot de passe :</strong> ${tempPassword}</p>
-          <p style="margin: 8px 0 0; color: #888; font-size: 12px;">Change ton mot de passe après ta première connexion.</p>
+        <p>Salut ${firstName},</p>
+        <p>Tu viens de rejoindre <span style="background: #0B0B0B; border-radius: 6px; padding: 3px 10px; display: inline-block;"><img src="https://i.imgur.com/PuZnBsX.png" alt="PROJET180" width="90" style="display: inline-block; vertical-align: middle;" /></span></p>
+        <p>180 jours. Un engagement. Une transformation complète.<br/>Ton parcours commence maintenant.</p>
+        <p>Connecte-toi, complète ton onboarding, et réserve ton premier call avec moi. C'est là que tout démarre.</p>
+        <p style="margin-top: 24px;"><strong>Email :</strong> ${email}<br/><strong>Mot de passe temporaire :</strong> ${tempPassword}<br/><span style="color: #888;">Tu pourras le changer dès ta première connexion.</span></p>
+        <div style="text-align: center; margin: 28px 0;">
+          <a href="${appUrl}" style="display: inline-block; background: #0B0B0B; color: white; padding: 14px 36px; border-radius: 10px; text-decoration: none; font-weight: 600;">
+            Entrer dans l'arène
+          </a>
         </div>
-        <a href="${appUrl}" style="display: inline-block; background: #3A86FF; color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; margin-top: 8px;">
-          Accéder à ma plateforme
-        </a>
-        <p style="color: #555; font-size: 13px; margin-top: 32px;">
-          — Robin, Projet180
-        </p>
       `),
     })
 
