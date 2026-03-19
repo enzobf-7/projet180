@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
   }
 
   const admin = createAdminClient()
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://projet180.vercel.app'
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.projet180.fr'
 
   // Fetch all clients with a completed onboarding
   const { data: onboardings, error: onbErr } = await admin
@@ -78,17 +78,23 @@ export async function GET(request: NextRequest) {
 
     if (alreadySent) continue
 
-    // Get profile
-    const { data: profile } = await admin
-      .from('profiles')
-      .select('email, first_name')
-      .eq('id', clientId)
-      .single()
+    // Get profile + gamification stats
+    const [{ data: profile }, { data: gam }] = await Promise.all([
+      admin.from('profiles').select('email, first_name').eq('id', clientId).single(),
+      admin.from('gamification').select('xp_total, current_streak, longest_streak, level').eq('client_id', clientId).single(),
+    ])
 
     if (!profile?.email) continue
 
     const firstName = profile.first_name || 'toi'
     const msg = MILESTONE_MESSAGES[milestone]
+    const xpTotal = gam?.xp_total ?? 0
+    const streak = gam?.current_streak ?? 0
+    const longestStreak = gam?.longest_streak ?? 0
+    const level = gam?.level ?? 1
+    const levelNames = ['L\'Endormi', 'L\'Éveillé', 'Le Bâtisseur', 'Le Souverain', 'Le Point de Bascule', 'Le 180']
+    const levelName = levelNames[level - 1] || levelNames[0]
+    const progressPct = Math.round((milestone / 180) * 100)
 
     try {
       const ok = await sendEmail({
@@ -96,17 +102,38 @@ export async function GET(request: NextRequest) {
         toName: firstName,
         subject: msg.subject,
         html: p180EmailTemplate(`
-          <p style="color: #3A86FF; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Jour ${milestone} / 180</p>
-          <h1 style="font-size: 22px; margin-bottom: 24px;">${firstName}.</h1>
-          <p style="color: #888; line-height: 1.8;">
-            ${msg.body}
-          </p>
-          <a href="${appUrl}/dashboard" style="display: inline-block; background: #3A86FF; color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; margin-top: 24px;">
-            Voir ma progression
-          </a>
-          <p style="color: #484848; font-size: 13px; margin-top: 32px;">
-            — Robin, Projet180
-          </p>
+          <div style="text-align: center; margin-bottom: 24px;">
+            <p style="font-size: 42px; font-weight: 900; color: #1a1a1a; margin: 0; letter-spacing: -1px;">JOUR ${milestone}</p>
+            <div style="background: #e5e5e5; border-radius: 20px; height: 8px; margin: 12px auto 0; max-width: 300px;">
+              <div style="background: #3A86FF; border-radius: 20px; height: 8px; width: ${progressPct}%;"></div>
+            </div>
+            <p style="color: #888; font-size: 13px; margin-top: 6px;">${progressPct}% du parcours</p>
+          </div>
+          <p>Salut ${firstName},</p>
+          <p>${msg.body}</p>
+          <div style="background: #f5f5f5; border-radius: 10px; padding: 20px; margin: 24px 0; display: flex; text-align: center;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="text-align: center;">
+              <tr>
+                <td style="padding: 8px;">
+                  <p style="font-size: 24px; font-weight: 800; color: #1a1a1a; margin: 0;">${xpTotal.toLocaleString('fr-FR')}</p>
+                  <p style="font-size: 12px; color: #888; margin: 4px 0 0; text-transform: uppercase; letter-spacing: 0.5px;">XP total</p>
+                </td>
+                <td style="padding: 8px;">
+                  <p style="font-size: 24px; font-weight: 800; color: #1a1a1a; margin: 0;">${longestStreak}j</p>
+                  <p style="font-size: 12px; color: #888; margin: 4px 0 0; text-transform: uppercase; letter-spacing: 0.5px;">Meilleure série</p>
+                </td>
+                <td style="padding: 8px;">
+                  <p style="font-size: 24px; font-weight: 800; color: #3A86FF; margin: 0;">Nv.${level}</p>
+                  <p style="font-size: 12px; color: #888; margin: 4px 0 0; text-transform: uppercase; letter-spacing: 0.5px;">${levelName}</p>
+                </td>
+              </tr>
+            </table>
+          </div>
+          <div style="text-align: center; margin: 28px 0;">
+            <a href="${appUrl}/dashboard" style="display: inline-block; background: #0B0B0B; color: white; padding: 14px 36px; border-radius: 10px; text-decoration: none; font-weight: 600;">
+              Voir ma progression
+            </a>
+          </div>
         `),
       })
 

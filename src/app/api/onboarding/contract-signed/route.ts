@@ -38,23 +38,13 @@ export async function POST() {
       subject: `${clientName} vient de signer son contrat`,
       senderName: 'Projet180',
       html: p180EmailTemplate(`
-        <p style="color: #3A86FF; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Contrat signé</p>
-        <h1 style="font-size: 22px; margin-bottom: 16px;">${clientName} a signé.</h1>
-        <p style="color: #888; line-height: 1.7;">
-          Ton client vient de lire et signer son contrat d'engagement dans Projet180.
-        </p>
-        <div style="background: #0F0F0F; border: 1px solid #1E1E1E; border-radius: 12px; padding: 20px; margin: 24px 0;">
-          <p style="margin: 0 0 4px; color: #484848; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Client</p>
-          <p style="margin: 0 0 12px; color: #F2F2F5; font-size: 16px;">${clientName}</p>
-          <p style="margin: 0 0 4px; color: #484848; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Email</p>
-          <p style="margin: 0 0 12px; color: #F2F2F5; font-size: 16px;">${clientEmail}</p>
-          <p style="margin: 0 0 4px; color: #484848; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Signature</p>
-          <p style="margin: 0 0 12px; color: #F2F2F5; font-size: 16px; font-style: italic;">${signatureName}</p>
-          <p style="margin: 0 0 4px; color: #484848; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Date</p>
-          <p style="margin: 0; color: #F2F2F5; font-size: 14px;">${signedAt} (Paris)</p>
-        </div>
-        <p style="color: #484848; font-size: 13px; margin-top: 32px;">
-          — Projet180
+        <p style="color: #3A86FF; font-weight: 600; margin-bottom: 4px;">Contrat signé</p>
+        <p><strong>${clientName}</strong> vient de signer son contrat d'engagement.</p>
+        <p style="margin-top: 20px;">
+          <strong>Client :</strong> ${clientName}<br/>
+          <strong>Email :</strong> ${clientEmail}<br/>
+          <strong>Signature :</strong> <em>${signatureName}</em><br/>
+          <strong>Date :</strong> ${signedAt} (Paris)
         </p>
       `),
     })

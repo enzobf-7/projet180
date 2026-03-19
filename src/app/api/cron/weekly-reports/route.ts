@@ -152,25 +152,44 @@ XP total accumulé : ${xpTotal} XP
 
       // Send weekly report email if AI summary was generated
       if (aiSummary && profileData?.email) {
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://projet180.vercel.app'
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.projet180.fr'
         const firstName = profileData.first_name || 'toi'
         try {
+          const xpWeek = habitCompletionPct > 0 ? Math.round(xpTotal * 0.1) : 0 // estimation XP semaine
           await sendEmail({
             to: profileData.email,
             toName: firstName,
             subject: `Ton bilan semaine ${weekNumber} — Projet180`,
             html: p180EmailTemplate(`
-              <p style="color: #3A86FF; font-size: 12px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;">Bilan semaine ${weekNumber} / 26</p>
-              <h1 style="font-size: 22px; margin-bottom: 24px;">${firstName}.</h1>
-              <p style="color: #888; line-height: 1.8; white-space: pre-line;">
-                ${aiSummary}
-              </p>
-              <a href="${appUrl}/dashboard" style="display: inline-block; background: #3A86FF; color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; margin-top: 24px;">
-                Voir mon dashboard
-              </a>
-              <p style="color: #484848; font-size: 13px; margin-top: 32px;">
-                — Robin, Projet180
-              </p>
+              <div style="border-left: 3px solid #3A86FF; padding-left: 16px; margin-bottom: 20px;">
+                <p style="color: #3A86FF; font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; margin: 0;">Semaine ${weekNumber} / 26</p>
+                <p style="color: #888; font-size: 13px; margin: 4px 0 0;">Ton bilan hebdomadaire</p>
+              </div>
+              <p>Salut ${firstName},</p>
+              <p style="white-space: pre-line;">${aiSummary}</p>
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0;">
+                <tr>
+                  <td style="background: #f5f5f5; border-radius: 10px; padding: 16px; text-align: center; width: 33%;">
+                    <p style="font-size: 28px; font-weight: 800; color: ${habitCompletionPct >= 80 ? '#22C55E' : habitCompletionPct >= 50 ? '#FFA500' : '#EF4444'}; margin: 0;">${habitCompletionPct}%</p>
+                    <p style="font-size: 11px; color: #888; margin: 4px 0 0; text-transform: uppercase; letter-spacing: 0.5px;">Habitudes</p>
+                  </td>
+                  <td width="8"></td>
+                  <td style="background: #f5f5f5; border-radius: 10px; padding: 16px; text-align: center; width: 33%;">
+                    <p style="font-size: 28px; font-weight: 800; color: #1a1a1a; margin: 0;">${streak}j</p>
+                    <p style="font-size: 11px; color: #888; margin: 4px 0 0; text-transform: uppercase; letter-spacing: 0.5px;">Série</p>
+                  </td>
+                  <td width="8"></td>
+                  <td style="background: #f5f5f5; border-radius: 10px; padding: 16px; text-align: center; width: 33%;">
+                    <p style="font-size: 28px; font-weight: 800; color: #3A86FF; margin: 0;">+${xpWeek}</p>
+                    <p style="font-size: 11px; color: #888; margin: 4px 0 0; text-transform: uppercase; letter-spacing: 0.5px;">XP semaine</p>
+                  </td>
+                </tr>
+              </table>
+              <div style="text-align: center; margin: 28px 0;">
+                <a href="${appUrl}/dashboard" style="display: inline-block; background: #0B0B0B; color: white; padding: 14px 36px; border-radius: 10px; text-decoration: none; font-weight: 600;">
+                  Voir mon dashboard
+                </a>
+              </div>
             `),
           })
         } catch (emailErr) {

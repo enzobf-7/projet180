@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   }
 
   const admin = createAdminClient()
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://projet180.vercel.app'
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.projet180.fr'
 
   // Yesterday's date string (YYYY-MM-DD)
   const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10)
@@ -66,19 +66,14 @@ export async function GET(request: NextRequest) {
         toName: firstName,
         subject: 'Tu as manqué tes habitudes hier',
         html: p180EmailTemplate(`
-          <h1 style="font-size: 22px; margin-bottom: 16px;">Hé ${firstName}.</h1>
-          <p style="color: #888; line-height: 1.7;">
-            Tu n'as coché aucune habitude hier. C'est une journée de perdue sur ta transformation de 180 jours.
-          </p>
-          <p style="color: #888; line-height: 1.7;">
-            Le succès se construit dans la régularité. Pas dans la perfection — dans la constance.
-          </p>
-          <a href="${appUrl}/dashboard" style="display: inline-block; background: #3A86FF; color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; margin-top: 16px;">
-            Reprendre aujourd'hui
-          </a>
-          <p style="color: #484848; font-size: 13px; margin-top: 32px;">
-            — Robin, Projet180
-          </p>
+          <p>Salut ${firstName},</p>
+          <p>Tu n'as coché aucune habitude hier. C'est une journée de perdue sur ta transformation.</p>
+          <p>Le succès se construit dans la régularité. Pas dans la perfection — dans la constance.</p>
+          <div style="text-align: center; margin: 28px 0;">
+            <a href="${appUrl}/dashboard" style="display: inline-block; background: #0B0B0B; color: white; padding: 14px 36px; border-radius: 10px; text-decoration: none; font-weight: 600;">
+              Reprendre aujourd'hui
+            </a>
+          </div>
         `),
       })
       if (ok) {
