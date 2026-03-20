@@ -16,12 +16,14 @@ export default async function ProfilPage() {
     { data: gamification },
     { data: weeklyReports },
     { data: wins },
+    { data: settings },
   ] = await Promise.all([
     admin.from('onboarding_progress').select('completed_at').eq('client_id', user.id).single(),
     admin.from('questionnaire_responses').select('responses').eq('client_id', user.id).single(),
     admin.from('gamification').select('xp_total, current_streak, longest_streak, level').eq('client_id', user.id).single(),
     admin.from('weekly_reports').select('id, week_number, motivation_score, responses, submitted_at').eq('client_id', user.id).order('week_number', { ascending: false }),
     admin.from('wins').select('id, content, week_number, created_at').eq('client_id', user.id).order('week_number', { ascending: false }),
+    admin.from('app_settings').select('robin_whatsapp').single(),
   ])
 
   // Jour X / 180
@@ -45,6 +47,7 @@ export default async function ProfilPage() {
       onboardingDate={onboarding?.completed_at ?? null}
       weeklyReports={(weeklyReports ?? []) as Array<{ id: string; week_number: number; motivation_score: number | null; responses: Record<string, unknown>; submitted_at: string }>}
       wins={(wins ?? []) as Array<{ id: string; content: string; week_number: number; created_at: string }>}
+      robinWhatsapp={(settings as { robin_whatsapp?: string | null } | null)?.robin_whatsapp ?? null}
     />
   )
 }

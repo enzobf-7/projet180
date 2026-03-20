@@ -16,6 +16,7 @@ export default async function ClassementPage() {
     { data: leaderboardData },
     { data: onboarding },
     { data: questionnaire },
+    { data: settings },
   ] = await Promise.all([
     admin.from('gamification')
       .select('client_id, xp_total, current_streak, profiles!client_id(first_name)')
@@ -23,6 +24,7 @@ export default async function ClassementPage() {
       .limit(100),
     admin.from('onboarding_progress').select('completed_at').eq('client_id', user.id).single(),
     admin.from('questionnaire_responses').select('responses').eq('client_id', user.id).single(),
+    admin.from('app_settings').select('robin_whatsapp').single(),
   ])
 
   // Jour X / 180
@@ -61,6 +63,7 @@ export default async function ClassementPage() {
       daysPct={daysPct}
       firstName={firstName}
       onboardingDate={onboarding?.completed_at ?? null}
+      robinWhatsapp={(settings as { robin_whatsapp?: string | null } | null)?.robin_whatsapp ?? null}
     />
   )
 }

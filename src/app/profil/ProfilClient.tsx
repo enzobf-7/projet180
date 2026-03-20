@@ -37,6 +37,7 @@ interface Props {
   onboardingDate: string | null
   weeklyReports:  WeeklyReport[]
   wins:           Win[]
+  robinWhatsapp:  string | null
 }
 
 import { LEVELS, getCurrentLevel, getLevelProgress } from '@/lib/levels'
@@ -115,7 +116,7 @@ const SCORE_FIELDS = [
   { key: 'score_social',   label: 'Social' },
 ]
 
-export default function ProfilClient({ jourX, email, responses, gamification, onboardingDate, weeklyReports, wins }: Props) {
+export default function ProfilClient({ jourX, email, responses, gamification, onboardingDate, weeklyReports, wins, robinWhatsapp }: Props) {
   const router = useRouter()
   const [activeSection, setActiveSection] = useState(0)
   const [signOutLoading, setSignOutLoading] = useState(false)
@@ -214,13 +215,14 @@ export default function ProfilClient({ jourX, email, responses, gamification, on
         navItems={navItems}
         onSignOut={handleSignOut}
         onboardingDate={onboardingDate}
+        robinWhatsapp={robinWhatsapp}
       />
 
       {/* ── Main ─────────────────────────────────────────────────────────────── */}
       <main style={{ display: 'flex', flexDirection: 'column', minHeight: 'calc(100vh - 110px)' }}>
 
         {/* Content */}
-        <div style={{ padding: '28px 24px 80px', maxWidth: 960, margin: '0 auto', width: '100%' }}>
+        <div style={{ padding: '28px 40px 80px', maxWidth: 1400, margin: '0 auto', width: '100%' }}>
 
           {/* ── Hero card ─────────────────────────────────────────────────── */}
           <div style={{

@@ -15,11 +15,13 @@ export default async function ProgrammePage() {
     { data: questionnaire },
     { data: gamification },
     { data: programContent },
+    { data: settings },
   ] = await Promise.all([
     admin.from('onboarding_progress').select('completed_at').eq('client_id', user.id).single(),
     admin.from('questionnaire_responses').select('responses').eq('client_id', user.id).single(),
     admin.from('gamification').select('xp_total, current_streak, longest_streak, level').eq('client_id', user.id).single(),
     admin.from('program_content').select('phase_number, week_number, title, objectives, focus_text, robin_notes').eq('client_id', user.id).order('week_number', { ascending: true }),
+    admin.from('app_settings').select('robin_whatsapp').single(),
   ])
 
   // Fallback vers le template global si aucun programme personnalisé
@@ -55,6 +57,7 @@ export default async function ProgrammePage() {
       }
       programContent={(finalProgramContent ?? []) as ProgramContentRow[]}
       onboardingDate={onboarding?.completed_at ?? null}
+      robinWhatsapp={(settings as { robin_whatsapp?: string | null } | null)?.robin_whatsapp ?? null}
     />
   )
 }

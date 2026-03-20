@@ -28,6 +28,7 @@ interface Props {
   gamification:   Gamification
   programContent: ProgramContentRow[]
   onboardingDate: string | null
+  robinWhatsapp:  string | null
 }
 
 // ─── Phases ───────────────────────────────────────────────────────────────────
@@ -42,7 +43,7 @@ const PHASES = [
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function ProgrammeClient({
-  jourX, firstName, gamification, programContent, onboardingDate,
+  jourX, firstName, gamification, programContent, onboardingDate, robinWhatsapp,
 }: Props) {
   const router   = useRouter()
   const supabase = createClient()
@@ -83,10 +84,11 @@ export default function ProgrammeClient({
         navItems={navItems}
         onSignOut={handleSignOut}
         onboardingDate={onboardingDate}
+        robinWhatsapp={robinWhatsapp}
       />
 
       {/* ── Main ──────────────────────────────────────────────────────────────── */}
-      <main style={{ padding: '28px 24px 80px', maxWidth: 960, margin: '0 auto' }}>
+      <main style={{ padding: '28px 40px 80px', maxWidth: 1400, margin: '0 auto' }}>
 
         {/* ── Cette semaine ─────────────────────────────────────────────────── */}
         <div style={{
