@@ -101,7 +101,7 @@ export default async function ClientFiche({
   const { id } = await params
   const admin = createAdminClient()
 
-  const [profileRes, questionnaireRes, gamiRes, habitsRes, reportsRes, onboardingRes] =
+  const [profileRes, questionnaireRes, gamiRes, habitsRes, reportsRes, onboardingRes, todosRes] =
     await Promise.all([
       admin.from('profiles').select('first_name, last_name, email').eq('id', id).single(),
       admin.from('questionnaire_responses').select('responses, submitted_at').eq('client_id', id).single(),
@@ -109,6 +109,7 @@ export default async function ClientFiche({
       admin.from('habits').select('id, name, category, is_active, progress_percent, description, xp_reward, period, sort_order').eq('client_id', id).order('sort_order'),
       admin.from('weekly_reports').select('id, week_number, motivation_score, submitted_at, responses').eq('client_id', id).order('week_number', { ascending: false }),
       admin.from('onboarding_progress').select('completed_at').eq('client_id', id).single(),
+      admin.from('todos').select('id, title, is_system, completed_date, day_of_week').eq('client_id', id).order('is_system', { ascending: false }),
     ])
 
   if (!profileRes.data) notFound()
@@ -119,6 +120,8 @@ export default async function ClientFiche({
   const habits        = habitsRes.data ?? []
   const reports       = reportsRes.data ?? []
   const onboarding    = onboardingRes.data
+  const todos         = todosRes.data ?? []
+  const todayStr      = new Date().toISOString().slice(0, 10)
 
   const jourX = onboarding?.completed_at
     ? Math.min(180, Math.ceil(
@@ -256,6 +259,49 @@ export default async function ClientFiche({
             description: h.description ?? null,
           }))}
         />
+
+        {/* ── Todos assignés ── */}
+        {todos.length > 0 && (
+          <section>
+            <h2 style={{ ...D, fontSize: '1.05rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.18em', marginBottom: '1.25rem', color: S.label }}>
+              Tâches assignées
+            </h2>
+            <div style={{ background: S.surface, border: `1px solid ${S.border}`, borderRadius: '1rem', overflow: 'hidden' }}>
+              {todos.map((t: any, i: number, arr: any[]) => {
+                const done = t.completed_date === todayStr
+                return (
+                  <div key={t.id} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '0.875rem 1.25rem',
+                    borderBottom: i < arr.length - 1 ? `1px solid ${S.border}` : undefined,
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div style={{
+                        width: 18, height: 18, borderRadius: 4, flexShrink: 0,
+                        background: done ? '#22c55e' : 'transparent',
+                        border: `2px solid ${done ? '#22c55e' : S.muted}`,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        {done && <span style={{ color: 'white', fontSize: '11px', lineHeight: 1 }}>✓</span>}
+                      </div>
+                      <span style={{ fontSize: '0.875rem', color: done ? S.text : S.muted }}>
+                        {t.title}
+                      </span>
+                      {t.is_system && (
+                        <span style={{ fontSize: '0.55rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#FFA500', background: '#FFA50015', padding: '2px 6px', borderRadius: 4 }}>
+                          Système
+                        </span>
+                      )}
+                    </div>
+                    <span style={{ fontSize: '0.7rem', color: done ? '#22c55e' : S.muted, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                      {done ? "Fait aujourd'hui" : 'Non fait'}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+        )}
 
         {/* ── Habitudes ── */}
         <section>

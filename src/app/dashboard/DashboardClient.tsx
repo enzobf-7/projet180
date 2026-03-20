@@ -179,12 +179,16 @@ export default function DashboardClient({
   const allDone = allHabitsDone && allTodosDone && allPersonalDone
 
   // ── WhatsApp message ────────────────────────────────────────────────────
-  const checkedItems = [
-    ...habitsOnly.filter(h => completed.has(h.id)).map(h => h.name),
-    ...todayTodos.filter(t => t.completed_date === todayDate).map(t => t.title),
-    ...personalTodos.filter(p => p.completed).map(p => p.title),
-  ]
-  const whatsappMessage = `Jour ${jourX}/180 — To-do 100% done! ✅\n${checkedItems.map(t => `• ${t}`).join('\n')}\n— Streak ${streak}j 🔥`
+  const checkedHabits = habitsOnly.filter(h => completed.has(h.id)).map(h => h.name)
+  const checkedTodos = todayTodos
+    .filter(t => t.completed_date === todayDate && t.title !== 'Préparer to-do de demain')
+    .map(t => t.title)
+  const checkedPersonal = personalTodos.filter(p => p.completed).map(p => p.title)
+  const streakLine = streak > 0 ? `\n🔥 Série : ${streak} jour${streak > 1 ? 's' : ''}` : ''
+  const habitBlock = checkedHabits.length > 0 ? `\n\n✅ Habitudes :\n${checkedHabits.map(t => `• ${t}`).join('\n')}` : ''
+  const todoBlock = checkedTodos.length > 0 ? `\n\n📋 Tâches :\n${checkedTodos.map(t => `• ${t}`).join('\n')}` : ''
+  const personalBlock = checkedPersonal.length > 0 ? `\n\n💪 Tâches perso :\n${checkedPersonal.map(t => `• ${t}`).join('\n')}` : ''
+  const whatsappMessage = `Jour ${jourX}/180 — Check-in complet ✅${habitBlock}${todoBlock}${personalBlock}${streakLine}`
 
   // ── Missions (category='mission') ───────────────────────────────────────
   const missions = habits.filter(h => h.category === 'mission')
