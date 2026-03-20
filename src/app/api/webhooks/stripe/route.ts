@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { sendEmail, p180EmailTemplate } from '@/lib/email'
+import { sendEmail, p180EmailTemplate, p180CtaButton } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
   if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_WEBHOOK_SECRET) {
@@ -79,18 +79,14 @@ export async function POST(request: NextRequest) {
     await sendEmail({
       to: email,
       toName: firstName,
-      subject: 'Bienvenue dans Projet180',
+      subject: 'Bienvenue dans PROJET180',
       html: p180EmailTemplate(`
         <p>Salut ${firstName},</p>
         <p>Tu viens de rejoindre <span style="background: #0B0B0B; border-radius: 6px; padding: 3px 10px; display: inline-block;"><img src="https://i.imgur.com/PuZnBsX.png" alt="PROJET180" width="90" style="display: inline-block; vertical-align: middle;" /></span></p>
         <p>180 jours. Un engagement. Une transformation complète.<br/>Ton parcours commence maintenant.</p>
         <p>Connecte-toi, complète ton onboarding, et réserve ton premier call avec moi. C'est là que tout démarre.</p>
         <p style="margin-top: 24px;"><strong>Email :</strong> ${email}<br/><strong>Mot de passe temporaire :</strong> ${tempPassword}<br/><span style="color: #888;">Tu pourras le changer dès ta première connexion.</span></p>
-        <div style="text-align: center; margin: 28px 0;">
-          <a href="${appUrl}" style="display: inline-block; background: #0B0B0B; color: white; padding: 14px 36px; border-radius: 10px; text-decoration: none; font-weight: 600;">
-            Entrer dans l'arène
-          </a>
-        </div>
+        ${p180CtaButton(appUrl, "Entrer dans l'arène")}
       `),
     })
 

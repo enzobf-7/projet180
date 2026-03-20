@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { sendEmail, p180EmailTemplate } from '@/lib/email'
+import { sendEmail, p180EmailTemplate, p180CtaButton } from '@/lib/email'
 
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
@@ -69,11 +69,7 @@ export async function GET(request: NextRequest) {
           <p>Salut ${firstName},</p>
           <p>Tu n'as coché aucune habitude hier. C'est une journée de perdue sur ta transformation.</p>
           <p>Le succès se construit dans la régularité. Pas dans la perfection — dans la constance.</p>
-          <div style="text-align: center; margin: 28px 0;">
-            <a href="${appUrl}/dashboard" style="display: inline-block; background: #0B0B0B; color: white; padding: 14px 36px; border-radius: 10px; text-decoration: none; font-weight: 600;">
-              Reprendre aujourd'hui
-            </a>
-          </div>
+          ${p180CtaButton(`${appUrl}/dashboard`, "Reprendre aujourd'hui")}
         `),
       })
       if (ok) {

@@ -22,6 +22,7 @@ interface Client {
   level: string
   onboarding_completed: boolean
   jourX: number
+  last_activity: string | null
 }
 
 interface Habit {
@@ -53,7 +54,37 @@ interface ProgramContentRow {
   robin_notes: string
 }
 
-type Tab = 'clients' | 'missions' | 'todos' | 'programme' | 'configuration'
+type Tab = 'clients' | 'missions' | 'todos' | 'programme' | 'classement' | 'configuration'
+
+function relativeTime(dateStr: string | null): string {
+  if (!dateStr) return 'Jamais'
+  const now = new Date()
+  now.setHours(0, 0, 0, 0)
+  const d = new Date(dateStr)
+  d.setHours(0, 0, 0, 0)
+  const diffDays = Math.floor((now.getTime() - d.getTime()) / 86400000)
+  if (diffDays === 0) return "Aujourd'hui"
+  if (diffDays === 1) return 'Hier'
+  if (diffDays < 7) return `Il y a ${diffDays}j`
+  if (diffDays < 30) return `Il y a ${Math.floor(diffDays / 7)} sem.`
+  return `Il y a ${Math.floor(diffDays / 30)} mois`
+}
+
+function getClientStatus(c: Client): { label: string; color: string; bg: string; border: string; priority: number } {
+  if (!c.onboarding_completed) return {
+    label: 'Onboarding', color: '#FFA500', bg: 'rgba(255,165,0,0.1)', border: 'rgba(255,165,0,0.3)', priority: 1,
+  }
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const twoDaysAgo = new Date(today.getTime() - 2 * 86400000).toISOString().slice(0, 10)
+  const isInactive = !c.last_activity || c.last_activity < twoDaysAgo
+  if (isInactive) return {
+    label: 'Inactif', color: '#EF4444', bg: 'rgba(239,68,68,0.1)', border: 'rgba(239,68,68,0.3)', priority: 0,
+  }
+  return {
+    label: 'Actif', color: '#22c55e', bg: 'rgba(34,197,94,0.1)', border: 'rgba(34,197,94,0.3)', priority: 2,
+  }
+}
 
 function InitialsBadge({ firstName, lastName }: { firstName: string; lastName: string }) {
   const initials = `${firstName?.[0] ?? ''}${lastName?.[0] ?? ''}`.toUpperCase()
@@ -412,6 +443,7 @@ export default function AdminPage() {
     { key: 'missions', label: 'Habitudes & Missions' },
     { key: 'todos', label: 'To-do' },
     { key: 'programme', label: 'Programme' },
+    { key: 'classement', label: 'Classement' },
     { key: 'configuration', label: 'Config' },
   ]
 
@@ -457,31 +489,33 @@ export default function AdminPage() {
                 Centre de contrôle
               </h1>
             </div>
-            {!loadingClients && (
-              <div style={{
-                display: 'flex', gap: 20, alignItems: 'center',
-              }}>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: '#F5F5F5', lineHeight: 1 }}>
-                    {clients.length}
-                  </div>
-                  <div style={{ fontSize: 10, color: '#484848', letterSpacing: '0.15em', textTransform: 'uppercase', marginTop: 2 }}>
-                    client{clients.length !== 1 ? 's' : ''}
-                  </div>
+            {!loadingClients && (() => {
+              const today = new Date()
+              today.setHours(0, 0, 0, 0)
+              const todayStr = today.toISOString().slice(0, 10)
+              const twoDaysAgo = new Date(today.getTime() - 2 * 86400000).toISOString().slice(0, 10)
+              const activeClients = clients.filter(c => c.onboarding_completed)
+              const checkedToday = activeClients.filter(c => c.last_activity === todayStr).length
+              const inactiveCount = activeClients.filter(c => !c.last_activity || c.last_activity < twoDaysAgo).length
+              const bestStreak = clients.reduce((max, c) => Math.max(max, (c as any).current_streak ?? 0), 0)
+              return (
+                <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                  {[
+                    { value: clients.length, label: 'clients', color: '#F5F5F5' },
+                    { value: checkedToday, label: "aujourd'hui", color: '#3A86FF' },
+                    { value: inactiveCount, label: inactiveCount > 1 ? 'inactifs' : 'inactif', color: inactiveCount > 0 ? '#EF4444' : '#22C55E' },
+                  ].map((kpi, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                      {i > 0 && <div style={{ width: 1, height: 28, background: '#1E1E1E' }} />}
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: 22, fontWeight: 800, color: kpi.color, lineHeight: 1 }}>{kpi.value}</div>
+                        <div style={{ fontSize: 10, color: kpi.color === '#F5F5F5' ? '#484848' : kpi.color, letterSpacing: '0.15em', textTransform: 'uppercase', marginTop: 2, opacity: 0.8 }}>{kpi.label}</div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div style={{
-                  width: 1, height: 28, background: '#1E1E1E',
-                }} />
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: '#F5F5F5', lineHeight: 1 }}>
-                    {clients.filter(c => c.onboarding_completed).length}
-                  </div>
-                  <div style={{ fontSize: 10, color: '#484848', letterSpacing: '0.15em', textTransform: 'uppercase', marginTop: 2 }}>
-                    actifs
-                  </div>
-                </div>
-              </div>
-            )}
+              )
+            })()}
           </div>
         </div>
       </header>
@@ -551,36 +585,65 @@ export default function AdminPage() {
                 </div>
               ) : (
                 <div>
-                  {clients.map((c, i) => {
+                  {[...clients]
+                    .sort((a, b) => {
+                      const sa = getClientStatus(a)
+                      const sb = getClientStatus(b)
+                      if (sa.priority !== sb.priority) return sa.priority - sb.priority
+                      return b.jourX - a.jourX
+                    })
+                    .map((c, i) => {
                     const progress = Math.min(100, Math.round((c.jourX / 180) * 100))
+                    const status = getClientStatus(c)
+                    const lastAct = relativeTime(c.last_activity)
+                    const isInactive = status.label === 'Inactif'
                     return (
-                      <div
+                      <a
                         key={c.id}
+                        href={`/admin/client/${c.id}`}
                         style={{
                           display: 'grid',
-                          gridTemplateColumns: '34px 1fr auto auto auto auto',
+                          gridTemplateColumns: '34px 1fr auto auto',
                           alignItems: 'center',
                           gap: 14,
-                          padding: '14px 20px',
+                          padding: '16px 20px',
                           borderBottom: i < clients.length - 1 ? '1px solid #111111' : 'none',
-                          background: i % 2 === 1 ? 'rgba(255,255,255,0.01)' : 'transparent',
-                          transition: 'background 0.1s',
+                          background: isInactive ? 'rgba(239,68,68,0.03)' : 'transparent',
+                          transition: 'background 0.15s',
+                          textDecoration: 'none', color: 'inherit',
+                          borderLeft: isInactive ? '3px solid rgba(239,68,68,0.5)' : '3px solid transparent',
                         }}
                       >
                         <InitialsBadge firstName={c.first_name} lastName={c.last_name} />
 
                         {/* Name + email + progress bar */}
                         <div style={{ minWidth: 0 }}>
-                          <div style={{ fontWeight: 600, fontSize: 14, color: '#F5F5F5', lineHeight: 1.2 }}>
-                            {c.first_name} {c.last_name}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontWeight: 600, fontSize: 14, color: '#F5F5F5', lineHeight: 1.2 }}>
+                              {c.first_name} {c.last_name}
+                            </span>
+                            <span style={{
+                              padding: '2px 8px', borderRadius: 5,
+                              background: status.bg, border: `1px solid ${status.border}`,
+                              fontSize: 9, fontWeight: 700,
+                              letterSpacing: '0.1em', textTransform: 'uppercase',
+                              color: status.color, whiteSpace: 'nowrap',
+                            }}>
+                              {status.label}
+                            </span>
                           </div>
-                          <div style={{ fontSize: 11, color: '#484848', fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {c.email}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
+                            <span style={{ fontSize: 11, color: '#484848', fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {c.email}
+                            </span>
+                            <span style={{ fontSize: 10, color: isInactive ? '#EF4444' : '#333', fontWeight: 500 }}>
+                              · {lastAct}
+                            </span>
                           </div>
                           {c.jourX > 0 && (
                             <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 7 }}>
-                              <div style={{ flex: 1, height: 3, borderRadius: 2, background: '#1E1E1E', overflow: 'hidden', maxWidth: 120 }}>
-                                <div style={{ height: '100%', borderRadius: 2, background: '#3A86FF', width: `${progress}%` }} />
+                              <div style={{ flex: 1, height: 3, borderRadius: 2, background: '#1E1E1E', overflow: 'hidden', maxWidth: 140 }}>
+                                <div style={{ height: '100%', borderRadius: 2, background: progress >= 100 ? '#22c55e' : '#3A86FF', width: `${progress}%`, transition: 'width 0.3s' }} />
                               </div>
                               <span style={{ fontSize: 10, color: '#3A86FF', fontWeight: 700, letterSpacing: '0.05em' }}>
                                 J{c.jourX}/180
@@ -589,59 +652,26 @@ export default function AdminPage() {
                           )}
                         </div>
 
-                        {/* XP */}
-                        <div style={{ textAlign: 'right', minWidth: 56 }}>
-                          <div style={{ fontSize: 15, fontWeight: 700, color: '#F5F5F5', fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)', letterSpacing: '-0.02em' }}>
+                        {/* XP + Level stacked */}
+                        <div style={{ textAlign: 'right', minWidth: 70 }}>
+                          <div style={{ fontSize: 16, fontWeight: 700, color: '#F5F5F5', fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)', letterSpacing: '-0.02em' }}>
                             {c.xp_total.toLocaleString('fr')}
+                            <span style={{ fontSize: 9, color: '#484848', marginLeft: 3, letterSpacing: '0.1em' }}>XP</span>
                           </div>
-                          <div style={{ fontSize: 9, color: '#484848', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 1 }}>xp</div>
+                          <div style={{
+                            fontSize: 9, fontWeight: 800,
+                            letterSpacing: '0.1em', textTransform: 'uppercase',
+                            color: '#6098FF', marginTop: 2,
+                          }}>
+                            {c.level || 'N/A'}
+                          </div>
                         </div>
 
-                        {/* Level */}
-                        <div style={{
-                          padding: '3px 10px', borderRadius: 6,
-                          background: 'rgba(58,134,255,0.15)',
-                          border: '1px solid rgba(58,134,255,0.3)',
-                          fontSize: 10, fontWeight: 800,
-                          letterSpacing: '0.12em', textTransform: 'uppercase',
-                          color: '#6098FF', whiteSpace: 'nowrap',
-                        }}>
-                          {c.level || 'N/A'}
-                        </div>
-
-                        {/* Onboarding badge */}
-                        <div style={{
-                          padding: '3px 10px', borderRadius: 6,
-                          background: c.onboarding_completed ? 'rgba(34,197,94,0.1)' : 'rgba(72,72,72,0.15)',
-                          border: `1px solid ${c.onboarding_completed ? 'rgba(34,197,94,0.3)' : '#1E1E1E'}`,
-                          fontSize: 10, fontWeight: 700,
-                          letterSpacing: '0.1em', textTransform: 'uppercase',
-                          color: c.onboarding_completed ? '#22c55e' : '#484848',
-                          whiteSpace: 'nowrap',
-                        }}>
-                          {c.onboarding_completed ? 'Actif' : 'Onboarding'}
-                        </div>
-
-                        {/* Fiche link */}
-                        <a
-                          href={`/admin/client/${c.id}`}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: 5,
-                            fontSize: 11, color: '#484848', textDecoration: 'none',
-                            fontWeight: 600, letterSpacing: '0.05em',
-                            padding: '5px 10px', borderRadius: 8,
-                            border: '1px solid #1E1E1E',
-                            background: '#0F0F0F',
-                            transition: 'all 0.15s',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          Fiche
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
-                          </svg>
-                        </a>
-                      </div>
+                        {/* Arrow */}
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                        </svg>
+                      </a>
                     )
                   })}
                 </div>
@@ -715,7 +745,7 @@ export default function AdminPage() {
                   {clientMsg && (
                     <div style={{ fontSize: 13, color: '#22c55e', background: '#001a00', border: '1px solid #16a34a', borderRadius: 10, padding: '10px 14px' }}>{clientMsg}</div>
                   )}
-                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
                     <button
                       type="submit"
                       disabled={addingClient}
@@ -1367,6 +1397,113 @@ export default function AdminPage() {
           </div>
         )}
 
+        {/* ══ Tab: Classement ══ */}
+        {activeTab === 'classement' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ borderRadius: 14, border: '1px solid #1E1E1E', background: '#0F0F0F', overflow: 'hidden' }}>
+              <div style={{
+                padding: '16px 20px', borderBottom: '1px solid #1E1E1E',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              }}>
+                <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#484848' }}>
+                  Classement par XP
+                </span>
+              </div>
+
+              {loadingClients ? (
+                <div style={{ padding: '40px 20px', textAlign: 'center', color: '#484848', fontSize: 13 }}>Chargement…</div>
+              ) : clients.length === 0 ? (
+                <div style={{ padding: '40px 20px', textAlign: 'center', color: '#484848', fontSize: 13 }}>Aucun client.</div>
+              ) : (
+                <div>
+                  {[...clients]
+                    .filter(c => c.onboarding_completed)
+                    .sort((a, b) => b.xp_total - a.xp_total)
+                    .map((c, i) => {
+                      const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : null
+                      const progress = Math.min(100, Math.round((c.jourX / 180) * 100))
+                      return (
+                        <div
+                          key={c.id}
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: '32px 34px 1fr auto auto',
+                            alignItems: 'center',
+                            gap: 12,
+                            padding: '14px 20px',
+                            borderBottom: '1px solid #111',
+                            background: i < 3 ? 'rgba(58,134,255,0.03)' : 'transparent',
+                          }}
+                        >
+                          {/* Rank */}
+                          <div style={{
+                            fontSize: medal ? 18 : 14,
+                            fontWeight: 800,
+                            color: medal ? undefined : '#333',
+                            textAlign: 'center',
+                            fontFamily: medal ? undefined : 'var(--font-mono, "JetBrains Mono", monospace)',
+                          }}>
+                            {medal ?? `#${i + 1}`}
+                          </div>
+
+                          <InitialsBadge firstName={c.first_name} lastName={c.last_name} />
+
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontWeight: 600, fontSize: 14, color: i < 3 ? '#F5F5F5' : '#aaa' }}>
+                              {c.first_name} {c.last_name}
+                            </div>
+                            <div style={{ fontSize: 10, color: '#484848', marginTop: 2 }}>
+                              J{c.jourX}/180 · {c.level}
+                            </div>
+                          </div>
+
+                          {/* XP bar */}
+                          <div style={{ width: 80 }}>
+                            <div style={{ height: 4, borderRadius: 2, background: '#1E1E1E', overflow: 'hidden' }}>
+                              <div style={{
+                                height: '100%', borderRadius: 2,
+                                background: i === 0 ? '#FFD700' : i === 1 ? '#C0C0C0' : i === 2 ? '#CD7F32' : '#3A86FF',
+                                width: `${Math.min(100, clients.length > 0 ? (c.xp_total / Math.max(...clients.map(cc => cc.xp_total))) * 100 : 0)}%`,
+                              }} />
+                            </div>
+                          </div>
+
+                          {/* XP */}
+                          <div style={{
+                            fontSize: 16, fontWeight: 800, color: i < 3 ? '#F5F5F5' : '#888',
+                            fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+                            minWidth: 60, textAlign: 'right',
+                          }}>
+                            {c.xp_total.toLocaleString('fr')}
+                            <span style={{ fontSize: 9, color: '#484848', marginLeft: 2 }}>XP</span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                </div>
+              )}
+            </div>
+
+            {/* Lien vers la page classement publique */}
+            <Link
+              href="/classement"
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                padding: '12px 20px', borderRadius: 10,
+                background: 'rgba(58,134,255,0.1)', border: '1px solid rgba(58,134,255,0.25)',
+                color: '#3A86FF', fontSize: 12, fontWeight: 700,
+                letterSpacing: '0.12em', textTransform: 'uppercase',
+                textDecoration: 'none', transition: 'all 0.15s',
+              }}
+            >
+              Voir la page classement complète
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+              </svg>
+            </Link>
+          </div>
+        )}
+
         {/* ══ Tab: Configuration ══ */}
         {activeTab === 'configuration' && (
           <form onSubmit={handleSaveSettings} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -1381,10 +1518,9 @@ export default function AdminPage() {
               </div>
               <div style={{ padding: '20px', display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
                 {[
-                  { key: 'whatsapp_link' as keyof AppSettingsRow, label: 'Groupe WhatsApp', placeholder: 'https://chat.whatsapp.com/...' },
-                  { key: 'skool_link' as keyof AppSettingsRow, label: 'Communauté Skool', placeholder: 'https://www.skool.com/...' },
-                  { key: 'iclosed_link' as keyof AppSettingsRow, label: 'Lien de call (iClosed)', placeholder: 'https://app.iclosed.io/...' },
                   { key: 'contract_pdf_url' as keyof AppSettingsRow, label: 'Contrat PDF', placeholder: 'https://.../contrat-projet180.pdf' },
+                  { key: 'iclosed_link' as keyof AppSettingsRow, label: 'Lien de call (iClosed)', placeholder: 'https://app.iclosed.io/...' },
+                  { key: 'skool_link' as keyof AppSettingsRow, label: 'Communauté Circle', placeholder: 'https://community.circle.so/...' },
                 ].map(field => (
                   <div key={field.key} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <label style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#484848' }}>
@@ -1409,7 +1545,7 @@ export default function AdminPage() {
               <div style={{ fontSize: 13, color: '#22c55e', background: '#001a00', border: '1px solid #16a34a', borderRadius: 10, padding: '12px 16px' }}>{settingsMsg}</div>
             )}
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
               <button
                 type="submit"
                 disabled={savingSettings}

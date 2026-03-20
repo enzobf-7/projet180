@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { sendEmail, p180EmailTemplate } from '@/lib/email'
+import { sendEmail, p180EmailTemplate, p180CtaButton } from '@/lib/email'
 import Anthropic from '@anthropic-ai/sdk'
 
 export async function GET(request: NextRequest) {
@@ -159,7 +159,7 @@ XP total accumulé : ${xpTotal} XP
           await sendEmail({
             to: profileData.email,
             toName: firstName,
-            subject: `Ton bilan semaine ${weekNumber} — Projet180`,
+            subject: `Ton bilan semaine ${weekNumber} — PROJET180`,
             html: p180EmailTemplate(`
               <div style="border-left: 3px solid #3A86FF; padding-left: 16px; margin-bottom: 20px;">
                 <p style="color: #3A86FF; font-weight: 700; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; margin: 0;">Semaine ${weekNumber} / 26</p>
@@ -169,27 +169,23 @@ XP total accumulé : ${xpTotal} XP
               <p style="white-space: pre-line;">${aiSummary}</p>
               <table width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0;">
                 <tr>
-                  <td style="background: #f5f5f5; border-radius: 10px; padding: 16px; text-align: center; width: 33%;">
+                  <td style="background: #111; border: 1px solid #222; border-radius: 10px; padding: 16px; text-align: center; width: 33%;">
                     <p style="font-size: 28px; font-weight: 800; color: ${habitCompletionPct >= 80 ? '#22C55E' : habitCompletionPct >= 50 ? '#FFA500' : '#EF4444'}; margin: 0;">${habitCompletionPct}%</p>
                     <p style="font-size: 11px; color: #888; margin: 4px 0 0; text-transform: uppercase; letter-spacing: 0.5px;">Habitudes</p>
                   </td>
                   <td width="8"></td>
-                  <td style="background: #f5f5f5; border-radius: 10px; padding: 16px; text-align: center; width: 33%;">
-                    <p style="font-size: 28px; font-weight: 800; color: #1a1a1a; margin: 0;">${streak}j</p>
+                  <td style="background: #111; border: 1px solid #222; border-radius: 10px; padding: 16px; text-align: center; width: 33%;">
+                    <p style="font-size: 28px; font-weight: 800; color: #fff; margin: 0;">${streak}j</p>
                     <p style="font-size: 11px; color: #888; margin: 4px 0 0; text-transform: uppercase; letter-spacing: 0.5px;">Série</p>
                   </td>
                   <td width="8"></td>
-                  <td style="background: #f5f5f5; border-radius: 10px; padding: 16px; text-align: center; width: 33%;">
+                  <td style="background: #111; border: 1px solid #222; border-radius: 10px; padding: 16px; text-align: center; width: 33%;">
                     <p style="font-size: 28px; font-weight: 800; color: #3A86FF; margin: 0;">+${xpWeek}</p>
                     <p style="font-size: 11px; color: #888; margin: 4px 0 0; text-transform: uppercase; letter-spacing: 0.5px;">XP semaine</p>
                   </td>
                 </tr>
               </table>
-              <div style="text-align: center; margin: 28px 0;">
-                <a href="${appUrl}/dashboard" style="display: inline-block; background: #0B0B0B; color: white; padding: 14px 36px; border-radius: 10px; text-decoration: none; font-weight: 600;">
-                  Voir mon dashboard
-                </a>
-              </div>
+              ${p180CtaButton(`${appUrl}/dashboard`, 'Voir mon dashboard')}
             `),
           })
         } catch (emailErr) {

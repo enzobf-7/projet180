@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { sendEmail, p180EmailTemplate } from '@/lib/email'
+import { sendEmail, p180EmailTemplate, p180CtaButton } from '@/lib/email'
 
 async function checkAdminAuth() {
   const supabase = await createClient()
@@ -27,13 +27,19 @@ export async function GET() {
 
   if (clientIds.length === 0) return NextResponse.json({ clients: [] })
 
-  const [{ data: gamification }, { data: onboarding }] = await Promise.all([
+  const [{ data: gamification }, { data: onboarding }, { data: lastLogs }] = await Promise.all([
     admin.from('gamification').select('client_id, xp_total, level').in('client_id', clientIds),
     admin.from('onboarding_progress').select('client_id, completed_at').in('client_id', clientIds),
+    admin.from('habit_logs').select('client_id, date').eq('completed', true).in('client_id', clientIds).order('date', { ascending: false }),
   ])
 
   const gamMap = Object.fromEntries((gamification ?? []).map(g => [g.client_id, g]))
   const onbMap = Object.fromEntries((onboarding ?? []).map(o => [o.client_id, o]))
+  // Dernière date d'activité par client (premier log trouvé car trié desc)
+  const lastActivityMap: Record<string, string> = {}
+  for (const log of lastLogs ?? []) {
+    if (!lastActivityMap[log.client_id]) lastActivityMap[log.client_id] = log.date
+  }
 
   const clients = clientUsers.map(u => {
     const gam = gamMap[u.id]
@@ -52,6 +58,7 @@ export async function GET() {
       level: gam?.level ?? 'RECRUE',
       onboarding_completed: !!onb?.completed_at,
       jourX,
+      last_activity: lastActivityMap[u.id] ?? null,
     }
   })
 
@@ -124,18 +131,14 @@ export async function POST(request: NextRequest) {
   await sendEmail({
     to: email.trim(),
     toName: first_name.trim(),
-    subject: 'Bienvenue dans Projet180',
+    subject: 'Bienvenue dans PROJET180',
     html: p180EmailTemplate(`
       <p>Salut ${first_name.trim()},</p>
       <p>Tu viens de rejoindre <span style="background: #0B0B0B; border-radius: 6px; padding: 3px 10px; display: inline-block;"><img src="https://i.imgur.com/PuZnBsX.png" alt="PROJET180" width="90" style="display: inline-block; vertical-align: middle;" /></span></p>
       <p>180 jours. Un engagement. Une transformation complète.<br/>Ton parcours commence maintenant.</p>
       <p>Connecte-toi, complète ton onboarding, et réserve ton premier call avec moi. C'est là que tout démarre.</p>
       <p style="margin-top: 24px;"><strong>Email :</strong> ${email.trim()}<br/><strong>Mot de passe temporaire :</strong> ${tempPassword}<br/><span style="color: #888;">Tu pourras le changer dès ta première connexion.</span></p>
-      <div style="text-align: center; margin: 28px 0;">
-        <a href="${appUrl}" style="display: inline-block; background: #0B0B0B; color: white; padding: 14px 36px; border-radius: 10px; text-decoration: none; font-weight: 600;">
-          Entrer dans l'arène
-        </a>
-      </div>
+      ${p180CtaButton(appUrl, "Entrer dans l'arène")}
     `),
   })
 

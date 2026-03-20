@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { sendEmail, p180EmailTemplate } from '@/lib/email'
+import { sendEmail, p180EmailTemplate, p180CtaButton } from '@/lib/email'
 
 const MILESTONES = [30, 60, 90, 180] as const
 
@@ -103,23 +103,23 @@ export async function GET(request: NextRequest) {
         subject: msg.subject,
         html: p180EmailTemplate(`
           <div style="text-align: center; margin-bottom: 24px;">
-            <p style="font-size: 42px; font-weight: 900; color: #1a1a1a; margin: 0; letter-spacing: -1px;">JOUR ${milestone}</p>
-            <div style="background: #e5e5e5; border-radius: 20px; height: 8px; margin: 12px auto 0; max-width: 300px;">
+            <p style="font-size: 32px; font-weight: 900; color: #fff; margin: 0; letter-spacing: -1px;">JOUR ${milestone}</p>
+            <div style="background: #222; border-radius: 20px; height: 8px; margin: 12px auto 0; max-width: 300px;">
               <div style="background: #3A86FF; border-radius: 20px; height: 8px; width: ${progressPct}%;"></div>
             </div>
             <p style="color: #888; font-size: 13px; margin-top: 6px;">${progressPct}% du parcours</p>
           </div>
           <p>Salut ${firstName},</p>
           <p>${msg.body}</p>
-          <div style="background: #f5f5f5; border-radius: 10px; padding: 20px; margin: 24px 0; display: flex; text-align: center;">
+          <div style="background: #111; border: 1px solid #222; border-radius: 10px; padding: 20px; margin: 24px 0; display: flex; text-align: center;">
             <table width="100%" cellpadding="0" cellspacing="0" style="text-align: center;">
               <tr>
                 <td style="padding: 8px;">
-                  <p style="font-size: 24px; font-weight: 800; color: #1a1a1a; margin: 0;">${xpTotal.toLocaleString('fr-FR')}</p>
+                  <p style="font-size: 24px; font-weight: 800; color: #fff; margin: 0;">${xpTotal.toLocaleString('fr-FR')}</p>
                   <p style="font-size: 12px; color: #888; margin: 4px 0 0; text-transform: uppercase; letter-spacing: 0.5px;">XP total</p>
                 </td>
                 <td style="padding: 8px;">
-                  <p style="font-size: 24px; font-weight: 800; color: #1a1a1a; margin: 0;">${longestStreak}j</p>
+                  <p style="font-size: 24px; font-weight: 800; color: #fff; margin: 0;">${longestStreak}j</p>
                   <p style="font-size: 12px; color: #888; margin: 4px 0 0; text-transform: uppercase; letter-spacing: 0.5px;">Meilleure série</p>
                 </td>
                 <td style="padding: 8px;">
@@ -129,11 +129,7 @@ export async function GET(request: NextRequest) {
               </tr>
             </table>
           </div>
-          <div style="text-align: center; margin: 28px 0;">
-            <a href="${appUrl}/dashboard" style="display: inline-block; background: #0B0B0B; color: white; padding: 14px 36px; border-radius: 10px; text-decoration: none; font-weight: 600;">
-              Voir ma progression
-            </a>
-          </div>
+          ${p180CtaButton(`${appUrl}/dashboard`, 'Voir ma progression')}
         `),
       })
 
