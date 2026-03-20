@@ -26,6 +26,9 @@ export const metadata: Metadata = {
   title: "PROJET180",
   description: "Programme de coaching 180 jours par Robin Duplouis",
   manifest: '/manifest.webmanifest',
+  icons: {
+    icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🎯</text></svg>',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
