@@ -181,7 +181,7 @@ export default function DashboardClient({
   // ── WhatsApp message ────────────────────────────────────────────────────
   const checkedHabits = habitsOnly.filter(h => completed.has(h.id)).map(h => h.name)
   const checkedTodos = todayTodos
-    .filter(t => t.completed_date === todayDate && t.title !== 'Préparer to-do de demain')
+    .filter(t => t.completed_date === todayDate)
     .map(t => t.title)
   const checkedPersonal = personalTodos.filter(p => p.completed).map(p => p.title)
   const streakLine = streak > 0 ? `\n🔥 Série : ${streak} jour${streak > 1 ? 's' : ''}` : ''
