@@ -286,7 +286,7 @@ export default function DashboardClient({
           />
 
           {/* Two-column: DailyCard + Progression */}
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 380px', gap: 20, marginBottom: 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 20, marginBottom: 20 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
               <DailyCard
                 habits={habits}
