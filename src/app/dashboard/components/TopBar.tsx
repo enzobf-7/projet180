@@ -2,6 +2,7 @@
 
 import { C, D, M } from '@/lib/design-tokens'
 import { useCountdown, p2 } from '@/lib/hooks/useCountdown'
+import { useIsMobile } from '@/lib/hooks/useIsMobile'
 import P180Logo from '@/components/P180Logo'
 
 interface NavItem {
@@ -30,6 +31,7 @@ export const NAV_ITEMS_CLIENT = [
 
 export function TopBar({ jourX, daysLeft, daysPct, firstName, navItems, onSignOut, onboardingDate, robinWhatsapp }: Props) {
   const countdown = useCountdown(onboardingDate ?? null)
+  const isMobile = useIsMobile()
 
   return (
     <header style={{
@@ -48,10 +50,12 @@ export function TopBar({ jourX, daysLeft, daysPct, firstName, navItems, onSignOu
       }}>
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <a href="/dashboard" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0 }}>
-            <P180Logo size="md" />
-          </a>
-          {robinWhatsapp && (
+          {!isMobile && (
+            <a href="/dashboard" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0 }}>
+              <P180Logo size="md" />
+            </a>
+          )}
+          {robinWhatsapp && !isMobile && (
             <a
               href={`https://wa.me/${robinWhatsapp.replace(/[^0-9]/g, '')}`}
               target="_blank"
@@ -76,14 +80,14 @@ export function TopBar({ jourX, daysLeft, daysPct, firstName, navItems, onSignOu
         </div>
 
         {/* Nav items — 4 onglets, tous surlignés */}
-        <nav style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+        <nav style={{ display: 'flex', gap: isMobile ? 2 : 4, flexShrink: 0 }}>
           {navItems.map(item => (
             <a key={item.href} href={item.href} style={{
-              padding: '10px 20px',
+              padding: isMobile ? '8px 10px' : '10px 20px',
               ...D,
               fontWeight: 700,
-              fontSize: '15px',
-              letterSpacing: '0.12em',
+              fontSize: isMobile ? '11px' : '15px',
+              letterSpacing: isMobile ? '0.06em' : '0.12em',
               textTransform: 'uppercase' as const,
               textDecoration: 'none',
               color: item.active ? 'white' : C.accent,
