@@ -40,14 +40,15 @@ export function TopBar({ jourX, daysLeft, daysPct, firstName, navItems, onSignOu
     }}>
       {/* Main row: logo + nav + user */}
       <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        display: 'grid',
+        gridTemplateColumns: '1fr auto 1fr',
+        alignItems: 'center',
         padding: '0 20px',
         height: 64,
-        position: 'relative',
       }}>
         {/* Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, minWidth: 160 }}>
-          <a href="/dashboard" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <a href="/dashboard" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', flexShrink: 0 }}>
             <P180Logo size="md" />
           </a>
           {robinWhatsapp && (
@@ -75,7 +76,7 @@ export function TopBar({ jourX, daysLeft, daysPct, firstName, navItems, onSignOu
         </div>
 
         {/* Nav items — 4 onglets, tous surlignés */}
-        <nav style={{ display: 'flex', gap: 4, position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
+        <nav style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
           {navItems.map(item => (
             <a key={item.href} href={item.href} style={{
               padding: '10px 20px',
@@ -96,7 +97,7 @@ export function TopBar({ jourX, daysLeft, daysPct, firstName, navItems, onSignOu
         </nav>
 
         {/* User avatar + sign out */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, justifyContent: 'flex-end' }}>
           <div style={{
             width: 30, height: 30,
             background: C.accent,
