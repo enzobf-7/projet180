@@ -164,6 +164,9 @@ export const DailyCard = memo(function DailyCard({
             transition: 'max-height 0.3s ease',
           }}>
             <div style={{ padding: '12px 24px 16px', background: C.bg, borderBottom: `1px solid ${C.border}` }}>
+              <p style={{ ...D, fontSize: '13px', color: C.muted, marginBottom: 10, lineHeight: 1.5 }}>
+                Sois précis et réaliste. Ces tâches seront là demain matin — engage-toi uniquement sur ce que tu feras vraiment.
+              </p>
               <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
                 <input
                   type="text"
