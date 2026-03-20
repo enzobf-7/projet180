@@ -30,7 +30,7 @@ export async function sendEmail({
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        sender: { name: senderName, email: 'noreply@projet180.fr' },
+        sender: { name: senderName, email: process.env.BREVO_SENDER_EMAIL || 'noreply@projet180.fr' },
         to: [{ email: to, name: toName || to }],
         subject,
         htmlContent: html,

@@ -173,7 +173,7 @@ export default function DashboardClient({
 
   // ── All done computation ────────────────────────────────────────────────
   const habitsOnly = habits.filter(h => h.category === 'habit')
-  const allHabitsDone = habitsOnly.length > 0 && habitsOnly.every(h => completed.has(h.id))
+  const allHabitsDone = habitsOnly.length === 0 || habitsOnly.every(h => completed.has(h.id))
   const allTodosDone = todayTodos.length > 0 && todayTodos.every(t => t.completed_date === todayDate)
   const allPersonalDone = personalTodos.length === 0 || personalTodos.every(p => p.completed)
   const allDone = allHabitsDone && allTodosDone && allPersonalDone
@@ -251,6 +251,7 @@ export default function DashboardClient({
         navItems={navItems}
         onSignOut={handleSignOut}
         onboardingDate={onboardingDate}
+        robinWhatsapp={robinWhatsapp}
       />
 
       <main style={{
@@ -298,7 +299,7 @@ export default function DashboardClient({
                 onTogglePersonalTodo={handleTogglePersonalTodo}
                 onAddPersonalTodos={handleAddPersonalTodos}
                 allDone={allDone}
-                whatsappLink={whatsappLink}
+                robinWhatsapp={robinWhatsapp}
                 whatsappMessage={whatsappMessage}
                 jourX={jourX}
               />
@@ -403,31 +404,9 @@ export default function DashboardClient({
             </div>
           )}
 
-          {/* Écrire à Robin — WhatsApp DM */}
-          {robinWhatsapp && (
-            <a href={`https://wa.me/${robinWhatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" style={{
-              display: 'flex', alignItems: 'center', gap: 12,
-              background: `${C.green}18`,
-              border: `1px solid ${C.green}40`,
-              borderRadius: 14,
-              padding: '14px 20px',
-              textDecoration: 'none',
-              transition: 'background 0.2s',
-              marginTop: 20,
-            }}>
-              <span style={{ fontSize: '20px' }}>💬</span>
-              <div>
-                <div style={{ ...D, fontWeight: 700, fontSize: '13px', color: C.greenL, letterSpacing: '0.06em', textTransform: 'uppercase' as const }}>
-                  Écrire à Robin
-                </div>
-                <div style={{ ...M, fontSize: '10px', color: `${C.greenL}90`, marginTop: 1 }}>
-                  WhatsApp direct
-                </div>
-              </div>
-            </a>
-          )}
         </div>
       </main>
+
     </div>
   )
 }

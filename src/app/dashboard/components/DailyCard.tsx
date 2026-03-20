@@ -19,7 +19,7 @@ interface Props {
   onTogglePersonalTodo: (id: string, completed: boolean) => void
   onAddPersonalTodos: (titles: string[]) => Promise<void>
   allDone: boolean
-  whatsappLink: string | null
+  robinWhatsapp: string | null
   whatsappMessage: string
   jourX: number
 }
@@ -28,7 +28,7 @@ export const DailyCard = memo(function DailyCard({
   habits, completed, loadingId, firstName, isMobile, celebrateRing, onToggle,
   todos, todayDate, onToggleTodo,
   personalTodos, onTogglePersonalTodo, onAddPersonalTodos,
-  allDone, whatsappLink, whatsappMessage,
+  allDone, robinWhatsapp, whatsappMessage,
 }: Props) {
   const habitsOnly = habits.filter(h => h.category === 'habit')
 
@@ -58,10 +58,17 @@ export const DailyCard = memo(function DailyCard({
     setPendingTodos(prev => prev.filter((_, i) => i !== idx))
   }
 
+  // Find the "Préparer to-do de demain" todo to auto-check after validation
+  const prepTodo = todos.find(t => t.title === 'Préparer to-do de demain')
+
   const handleValidatePrep = async () => {
     if (pendingTodos.length === 0) return
     setPrepLoading(true)
     await onAddPersonalTodos(pendingTodos)
+    // Auto-check the prep todo once tasks are validated
+    if (prepTodo && prepTodo.completed_date !== todayDate) {
+      onToggleTodo(prepTodo.id, prepTodo.completed_date)
+    }
     setPendingTodos([])
     setShowPrepForm(false)
     setPrepLoading(false)
@@ -108,8 +115,12 @@ export const DailyCard = memo(function DailyCard({
     return (
       <div key={todo.id}>
         <button onClick={() => {
-          onToggleTodo(todo.id, todo.completed_date)
-          if (isPrepTodo && !isDone) setShowPrepForm(true)
+          if (isPrepTodo) {
+            // Ne pas cocher directement — ouvrir le formulaire
+            if (!isDone) setShowPrepForm(!showPrepForm)
+          } else {
+            onToggleTodo(todo.id, todo.completed_date)
+          }
         }} style={{
           display: 'flex', alignItems: 'center', gap: 14,
           width: '100%', background: 'none', border: 'none', cursor: 'pointer',
@@ -162,8 +173,8 @@ export const DailyCard = memo(function DailyCard({
                   placeholder="Ajouter une tâche pour demain..."
                   style={{
                     flex: 1, background: C.surface, border: `1px solid ${C.border}`,
-                    borderRadius: 8, padding: '10px 14px',
-                    color: C.text, ...D, fontSize: '13px',
+                    borderRadius: 8, padding: '12px 14px',
+                    color: C.text, ...D, fontSize: '15px',
                     outline: 'none',
                   }}
                 />
@@ -184,7 +195,7 @@ export const DailyCard = memo(function DailyCard({
                       padding: '6px 12px', background: C.surface, borderRadius: 6,
                       border: `1px solid ${C.border}`,
                     }}>
-                      <span style={{ ...D, fontSize: '13px', color: C.text }}>{t}</span>
+                      <span style={{ ...D, fontSize: '15px', color: C.text }}>{t}</span>
                       <button onClick={() => handleRemovePending(i)} style={{
                         background: 'none', border: 'none', cursor: 'pointer',
                         color: C.muted, fontSize: '16px', padding: '0 4px',
@@ -318,11 +329,11 @@ export const DailyCard = memo(function DailyCard({
       )}
 
       {/* WhatsApp button — locked until 100% */}
-      {whatsappLink && (
+      {robinWhatsapp && (
         <div style={{ padding: '12px 24px 16px' }}>
           {allDone ? (
             <a
-              href={`https://wa.me/${whatsappLink.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(whatsappMessage)}`}
+              href={`https://wa.me/${robinWhatsapp.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(whatsappMessage)}`}
               target="_blank"
               rel="noopener noreferrer"
               style={{

@@ -62,7 +62,7 @@ export default function SetPasswordPage() {
         borderRadius: 16,
         padding: '48px 32px',
       }}>
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 32 }}>
           <P180Logo size="lg" />
         </div>
 

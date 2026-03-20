@@ -76,12 +76,11 @@ cd projet180-app && npm run dev   # port 3000
 
 ## DB — Gotchas critiques
 
-### Gotcha #1 — `onboarding_progress` utilise `user_id`, pas `client_id`
+### Gotcha #1 — `onboarding_progress` utilise `client_id` (comme toutes les autres tables)
 ```sql
 -- CORRECT
-.eq('user_id', user.id)
--- FAUX (toutes les autres tables utilisent client_id)
 .eq('client_id', user.id)
+-- La colonne s'appelle bien client_id, verifie via information_schema
 ```
 
 ### Gotcha #2 — `habits.created_by` est un enum texte, pas un UUID
@@ -101,7 +100,7 @@ category text check (category in ('habit', 'mission'))
 |-------|-------------|-------|
 | `profiles` | `id` = auth.users.id | `role` ('admin'/'client'), `email`, `first_name`, `last_name` |
 | `app_settings` | — | 5 champs config (WhatsApp groupe, Skool, iClosed, contrat PDF, `robin_whatsapp`) |
-| `onboarding_progress` | `user_id` | Etapes 1-5, `step1_signature_name`, `step1_signed_at`, `completed_at` |
+| `onboarding_progress` | `client_id` | Etapes 1-5, `step1_signature_name`, `step1_signed_at`, `completed_at` |
 | `questionnaire_responses` | `client_id` | 40+ champs reponses formulaire (7 sections) |
 | `programs` | `client_id` | Donnees programme 180j |
 | `habits` | `client_id` | `is_active`, `sort_order`, `category` ('habit'\|'mission'), `created_by` ('admin'\|'client'), `progress_percent`, `description`, `xp_reward`, `period` |
@@ -139,8 +138,8 @@ import { updateSession } from '@/lib/supabase/middleware'   // middleware auth r
 ### Dashboard (src/app/dashboard/components/)
 | Composant | Role |
 |-----------|------|
-| `TopBar` | Header sticky — logo + 4 onglets nav (tous bleus) + avatar. Ligne JOUR X + countdown live (j:h:m:s). Barre progression |
-| `DailyCard` | Check-in unifie : habits + todos obligatoires (badge orange) + taches perso. Counter X/Y. Inline form "Preparer to-do de demain". Bouton WhatsApp verrouille jusqu'a 100% |
+| `TopBar` | Header sticky — logo + bouton WhatsApp Robin + 4 onglets nav (tous bleus) + avatar. Ligne JOUR X + countdown live (j:h:m:s). Barre progression |
+| `DailyCard` | Check-in unifie : habits + todos obligatoires (badge orange) + taches perso. Counter X/Y. Inline form "Preparer to-do de demain". Bouton "Partager sur WhatsApp" (vers Robin) verrouille jusqu'a 100% |
 | `HeroCard` | Section hero avec niveau, XP, progression |
 | `MissionsPanel` | Missions one-shot avec progression slider |
 | `WinsCard` | Wins de la semaine — **affiche le dimanche uniquement** |
@@ -169,8 +168,10 @@ import { updateSession } from '@/lib/supabase/middleware'   // middleware auth r
 | `/api/admin/habits` | GET/POST | Liste habits / Creer habit |
 | `/api/admin/todos` | GET/POST/DELETE | Liste/Creer/Supprimer todos (impossible de supprimer `is_system=true`) |
 | `/api/dev/create-test-user` | POST | Cree user test — desactive si `SEED=false` |
+| `/api/dev/create-real-client` | POST | Cree client reel + envoie email bienvenue — desactive si `SEED=false` |
 | `/api/dev/complete-onboarding` | POST | Skip onboarding pour tests |
 | `/api/dev/seed-demo-data` | POST | Donnees de demo pour tests |
+| `/api/dev/test-emails` | POST | Envoie les 5 templates email pour test — desactive si `SEED=false` |
 
 ---
 
@@ -283,6 +284,7 @@ SUPABASE_SERVICE_ROLE_KEY=
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
 BREVO_API_KEY=
+BREVO_SENDER_EMAIL=noreply@projet180.fr  # email expediteur verifie dans Brevo
 NEXT_PUBLIC_APP_URL=https://app.projet180.fr
 CRON_SECRET=
 COACH_EMAIL=robin@projet180.fr

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { C, D, M } from '@/lib/design-tokens'
 import { LEVELS } from '@/lib/levels'
 import { P180Button } from '@/components/P180Button'
+import P180Logo from '@/components/P180Logo'
 
 const STORAGE_KEY = 'p180_welcome_seen'
 
@@ -49,11 +50,11 @@ export function WelcomeOverlay() {
         padding: '40px 32px',
       }}>
         {/* Title */}
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <h1 style={{ ...D, fontWeight: 900, fontSize: '32px', letterSpacing: '0.1em', textTransform: 'uppercase' as const, color: C.text, marginBottom: 8 }}>
-            Bienvenue dans Projet<span style={{ color: C.accent }}>180</span>
-          </h1>
-          <p style={{ ...D, fontWeight: 500, fontSize: '15px', color: C.muted, letterSpacing: '0.06em', textTransform: 'uppercase' as const }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 32 }}>
+          <div style={{ marginBottom: 12 }}>
+            <P180Logo size="2xl" />
+          </div>
+          <p style={{ ...D, fontWeight: 500, fontSize: '15px', color: C.muted, letterSpacing: '0.06em', textTransform: 'uppercase' as const, textAlign: 'center' }}>
             Voici comment fonctionne ta progression
           </p>
         </div>
