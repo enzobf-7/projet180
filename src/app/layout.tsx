@@ -23,13 +23,13 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Projet180",
+  title: "PROJET180",
   description: "Programme de coaching 180 jours par Robin Duplouis",
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Projet180',
+    title: 'PROJET180',
   },
 };
 

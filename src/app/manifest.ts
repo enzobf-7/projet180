@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Projet180',
+    name: 'PROJET180',
     short_name: 'P180',
     description: 'Programme de coaching 180 jours',
     start_url: '/dashboard',
