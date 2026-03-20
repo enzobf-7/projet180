@@ -43,9 +43,10 @@ export function TopBar({ jourX, daysLeft, daysPct, firstName, navItems, onSignOu
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 20px',
         height: 64,
+        position: 'relative',
       }}>
         {/* Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, minWidth: 160 }}>
           <a href="/dashboard" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
             <P180Logo size="md" />
           </a>
@@ -74,7 +75,7 @@ export function TopBar({ jourX, daysLeft, daysPct, firstName, navItems, onSignOu
         </div>
 
         {/* Nav items — 4 onglets, tous surlignés */}
-        <nav style={{ display: 'flex', gap: 4 }}>
+        <nav style={{ display: 'flex', gap: 4, position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
           {navItems.map(item => (
             <a key={item.href} href={item.href} style={{
               padding: '10px 20px',

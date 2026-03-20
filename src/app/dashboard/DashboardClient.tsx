@@ -265,8 +265,8 @@ export default function DashboardClient({
       }}>
         <div style={{
           flex: 1,
-          padding: isMobile ? '20px 16px 40px' : '28px 32px 48px',
-          maxWidth: 1120,
+          padding: isMobile ? '20px 16px 40px' : '28px 24px 48px',
+          maxWidth: 960,
           width: '100%',
           margin: '0 auto',
         }}>

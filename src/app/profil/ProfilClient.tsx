@@ -220,7 +220,7 @@ export default function ProfilClient({ jourX, email, responses, gamification, on
       <main style={{ display: 'flex', flexDirection: 'column', minHeight: 'calc(100vh - 110px)' }}>
 
         {/* Content */}
-        <div style={{ padding: '40px', width: '100%' }}>
+        <div style={{ padding: '28px 24px 80px', maxWidth: 960, margin: '0 auto', width: '100%' }}>
 
           {/* ── Hero card ─────────────────────────────────────────────────── */}
           <div style={{

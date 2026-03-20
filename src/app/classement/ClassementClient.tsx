@@ -59,7 +59,7 @@ export default function ClassementClient({ leaderboard, jourX, daysLeft, daysPct
         onboardingDate={onboardingDate}
       />
 
-      <div style={{ maxWidth: 700, margin: '0 auto', padding: '32px 16px 80px' }}>
+      <div style={{ maxWidth: 960, margin: '0 auto', padding: '28px 24px 80px' }}>
         {/* Page title */}
         <h1 style={{
           ...D,

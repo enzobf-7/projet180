@@ -86,7 +86,7 @@ export default function ProgrammeClient({
       />
 
       {/* ── Main ──────────────────────────────────────────────────────────────── */}
-      <main style={{ padding: '32px 24px 80px', maxWidth: 800, margin: '0 auto' }}>
+      <main style={{ padding: '28px 24px 80px', maxWidth: 960, margin: '0 auto' }}>
 
         {/* ── Cette semaine ─────────────────────────────────────────────────── */}
         <div style={{
