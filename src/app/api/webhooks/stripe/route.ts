@@ -29,9 +29,15 @@ export async function POST(request: NextRequest) {
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object
 
+    // Filtre : ne traiter que les paiements PROJET180
+    if (session.metadata?.product !== 'projet180') {
+      console.log('Webhook ignored: not a projet180 payment', session.metadata)
+      return NextResponse.json({ status: 'ignored' })
+    }
+
     const email = session.customer_details?.email
     const name = session.customer_details?.name || ''
-    
+
     if (!email) {
       console.error('No email in Stripe session')
       return NextResponse.json({ error: 'No email' }, { status: 400 })
