@@ -996,18 +996,18 @@ export default function AdminPage() {
                   onChange={e => setProgramClientId(e.target.value)}
                   style={{ ...inputStyle, cursor: 'pointer' }}
                 >
-                  <option value="">— Template de base (global) —</option>
+                  <option value="">— Choisir un client —</option>
                   {clients.map(c => (
                     <option key={c.id} value={c.id}>
                       {c.first_name} {c.last_name} ({c.email})
                     </option>
                   ))}
                 </select>
-                <div style={{ fontSize: 11, color: '#484848', marginTop: 8 }}>
-                  {programClientId
-                    ? `Programme personnalisé pour ${clients.find(c => c.id === programClientId)?.first_name || 'ce client'}.`
-                    : 'Le template de base est visible par les clients qui n\'ont pas de programme personnalisé.'}
-                </div>
+                {programClientId && (
+                  <div style={{ fontSize: 11, color: '#484848', marginTop: 8 }}>
+                    Programme personnalisé pour {clients.find(c => c.id === programClientId)?.first_name || 'ce client'}.
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1070,10 +1070,7 @@ export default function AdminPage() {
                           padding: '16px', borderRadius: 10,
                           border: '1px solid #1A1A1A', background: '#080808',
                         }}>
-                          <div style={{
-                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                            marginBottom: 14,
-                          }}>
+                          <div style={{ marginBottom: 14 }}>
                             <span style={{
                               fontSize: 12, fontWeight: 800, letterSpacing: '0.18em',
                               textTransform: 'uppercase', color: '#3A86FF',
@@ -1081,20 +1078,6 @@ export default function AdminPage() {
                             }}>
                               Semaine {week}
                             </span>
-                            <button
-                              onClick={() => handleSaveWeek(phase.num, week)}
-                              disabled={isSaving}
-                              style={{
-                                padding: '6px 16px', borderRadius: 8,
-                                background: isSaving ? '#0A1A3A' : '#3A86FF',
-                                border: 'none', cursor: isSaving ? 'not-allowed' : 'pointer',
-                                fontSize: 10, fontWeight: 700, letterSpacing: '0.15em',
-                                textTransform: 'uppercase', color: '#FFFFFF',
-                                opacity: isSaving ? 0.6 : 1, transition: 'all 0.15s',
-                              }}
-                            >
-                              {isSaving ? 'Sauvegarde…' : 'Sauvegarder'}
-                            </button>
                           </div>
 
                           <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}>
@@ -1152,6 +1135,24 @@ export default function AdminPage() {
                                 minHeight: 60,
                               }}
                             />
+                          </div>
+
+                          {/* Bouton sauvegarder en bas à gauche */}
+                          <div style={{ marginTop: 14, display: 'flex', justifyContent: 'flex-start' }}>
+                            <button
+                              onClick={() => handleSaveWeek(phase.num, week)}
+                              disabled={isSaving}
+                              style={{
+                                padding: '8px 20px', borderRadius: 8,
+                                background: isSaving ? '#0A1A3A' : '#3A86FF',
+                                border: 'none', cursor: isSaving ? 'not-allowed' : 'pointer',
+                                fontSize: 10, fontWeight: 700, letterSpacing: '0.15em',
+                                textTransform: 'uppercase', color: '#FFFFFF',
+                                opacity: isSaving ? 0.6 : 1, transition: 'all 0.15s',
+                              }}
+                            >
+                              {isSaving ? 'Sauvegarde…' : 'Sauvegarder'}
+                            </button>
                           </div>
                         </div>
                       )

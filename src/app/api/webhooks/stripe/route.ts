@@ -80,6 +80,11 @@ export async function POST(request: NextRequest) {
       { client_id: userId, title: 'Préparer to-do de demain', is_system: true, day_of_week: null },
       { client_id: userId, title: 'Poster wins de la semaine', is_system: true, day_of_week: 0 },
     ])
+    // Habitudes système auto-assignées
+    await supabase.from('habits').insert([
+      { client_id: userId, name: 'Préparer to-do de demain', category: 'habit', is_active: true, created_by: 'admin', sort_order: 998 },
+      { client_id: userId, name: 'Poster wins de la semaine (dimanche)', category: 'habit', is_active: true, created_by: 'admin', sort_order: 999 },
+    ])
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.projet180.fr'
     await sendEmail({
