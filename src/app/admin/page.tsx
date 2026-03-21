@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 
 interface AppSettingsRow {
   id: string
@@ -35,15 +34,6 @@ interface Habit {
   created_at: string
 }
 
-interface Todo {
-  id: string
-  client_id: string
-  title: string
-  is_system: boolean
-  completed_date: string | null
-  created_at: string
-}
-
 interface ProgramContentRow {
   id?: string
   phase_number: number
@@ -54,7 +44,7 @@ interface ProgramContentRow {
   robin_notes: string
 }
 
-type Tab = 'clients' | 'missions' | 'todos' | 'programme' | 'classement' | 'configuration'
+type Tab = 'clients' | 'programme' | 'missions' | 'classement' | 'configuration'
 
 function relativeTime(dateStr: string | null): string {
   if (!dateStr) return 'Jamais'
@@ -137,13 +127,6 @@ export default function AdminPage() {
   const [habitErr, setHabitErr] = useState<string | null>(null)
   const [habitMsg, setHabitMsg] = useState<string | null>(null)
 
-  // — Todos —
-  const [todos, setTodos] = useState<Todo[]>([])
-  const [loadingTodos, setLoadingTodos] = useState(false)
-  const [newTodoTitle, setNewTodoTitle] = useState('')
-  const [addingTodo, setAddingTodo] = useState(false)
-  const [todoErr, setTodoErr] = useState<string | null>(null)
-
   // — Programme —
   const [programClientId, setProgramClientId] = useState<string>('')
   const [programContent, setProgramContent] = useState<ProgramContentRow[]>([])
@@ -193,20 +176,6 @@ export default function AdminPage() {
   }, [])
 
   useEffect(() => { loadHabits(selectedClientId) }, [selectedClientId, loadHabits])
-
-  // ────────── Load todos for selected client ──────────
-  const loadTodos = useCallback(async (clientId: string) => {
-    if (!clientId) { setTodos([]); return }
-    setLoadingTodos(true)
-    const res = await fetch(`/api/admin/todos?clientId=${clientId}`)
-    if (res.ok) {
-      const json = await res.json()
-      setTodos(json.todos ?? [])
-    }
-    setLoadingTodos(false)
-  }, [])
-
-  useEffect(() => { loadTodos(selectedClientId) }, [selectedClientId, loadTodos])
 
   // ────────── Load programme content ──────────
   const PHASES = [
@@ -378,35 +347,6 @@ export default function AdminPage() {
     }
   }
 
-  // ────────── Add todo ──────────
-  async function handleAddTodo(e: React.FormEvent) {
-    e.preventDefault()
-    if (!selectedClientId || !newTodoTitle.trim()) return
-    setAddingTodo(true)
-    setTodoErr(null)
-    const res = await fetch('/api/admin/todos', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ client_id: selectedClientId, title: newTodoTitle.trim() }),
-    })
-    const json = await res.json()
-    if (!res.ok) {
-      setTodoErr(json.error ?? 'Erreur lors de la création.')
-    } else {
-      setNewTodoTitle('')
-      setTodos(prev => [...prev, json.todo])
-    }
-    setAddingTodo(false)
-  }
-
-  // ────────── Delete todo ──────────
-  async function handleDeleteTodo(id: string) {
-    const res = await fetch(`/api/admin/todos?id=${id}`, { method: 'DELETE' })
-    if (res.ok) {
-      setTodos(prev => prev.filter(t => t.id !== id))
-    }
-  }
-
   // ────────── Loading screen ──────────
   if (loadingSettings) {
     return (
@@ -440,9 +380,8 @@ export default function AdminPage() {
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'clients', label: 'Clients' },
-    { key: 'missions', label: 'Habitudes & Missions' },
-    { key: 'todos', label: 'To-do' },
     { key: 'programme', label: 'Programme' },
+    { key: 'missions', label: 'Habitudes & Missions' },
     { key: 'classement', label: 'Classement' },
     { key: 'configuration', label: 'Config' },
   ]
@@ -489,36 +428,44 @@ export default function AdminPage() {
                 Centre de contrôle
               </h1>
             </div>
-            {!loadingClients && (() => {
-              const today = new Date()
-              today.setHours(0, 0, 0, 0)
-              const todayStr = today.toISOString().slice(0, 10)
-              const twoDaysAgo = new Date(today.getTime() - 2 * 86400000).toISOString().slice(0, 10)
-              const activeClients = clients.filter(c => c.onboarding_completed)
-              const checkedToday = activeClients.filter(c => c.last_activity === todayStr).length
-              const inactiveCount = activeClients.filter(c => !c.last_activity || c.last_activity < twoDaysAgo).length
-              const bestStreak = clients.reduce((max, c) => Math.max(max, (c as any).current_streak ?? 0), 0)
-              return (
-                <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-                  {[
-                    { value: clients.length, label: 'clients', color: '#F5F5F5' },
-                    { value: checkedToday, label: "aujourd'hui", color: '#3A86FF' },
-                    { value: inactiveCount, label: inactiveCount > 1 ? 'inactifs' : 'inactif', color: inactiveCount > 0 ? '#EF4444' : '#22C55E' },
-                  ].map((kpi, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                      {i > 0 && <div style={{ width: 1, height: 28, background: '#1E1E1E' }} />}
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: 22, fontWeight: 800, color: kpi.color, lineHeight: 1 }}>{kpi.value}</div>
-                        <div style={{ fontSize: 10, color: kpi.color === '#F5F5F5' ? '#484848' : kpi.color, letterSpacing: '0.15em', textTransform: 'uppercase', marginTop: 2, opacity: 0.8 }}>{kpi.label}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )
-            })()}
           </div>
         </div>
       </header>
+
+      {/* ── KPI CARDS ── */}
+      {!loadingClients && (() => {
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        const todayStr = today.toISOString().slice(0, 10)
+        const twoDaysAgo = new Date(today.getTime() - 2 * 86400000).toISOString().slice(0, 10)
+        const activeClients = clients.filter(c => c.onboarding_completed)
+        const checkedToday = activeClients.filter(c => c.last_activity === todayStr).length
+        const inactiveCount = activeClients.filter(c => !c.last_activity || c.last_activity < twoDaysAgo).length
+        return (
+          <div style={{ maxWidth: 1000, margin: '0 auto', padding: '20px 28px 0', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+            {[
+              { value: clients.length, label: 'Total clients', color: '#F5F5F5', bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.08)' },
+              { value: checkedToday, label: "Actifs aujourd'hui", color: '#3A86FF', bg: 'rgba(58,134,255,0.08)', border: 'rgba(58,134,255,0.2)' },
+              { value: inactiveCount, label: 'Inactifs (2j+)', color: inactiveCount > 0 ? '#EF4444' : '#22C55E', bg: inactiveCount > 0 ? 'rgba(239,68,68,0.08)' : 'rgba(34,197,94,0.08)', border: inactiveCount > 0 ? 'rgba(239,68,68,0.2)' : 'rgba(34,197,94,0.2)' },
+            ].map((kpi, i) => (
+              <div key={i} style={{
+                padding: '16px 20px', borderRadius: 14,
+                background: kpi.bg, border: `1px solid ${kpi.border}`,
+              }}>
+                <div style={{
+                  fontSize: 28, fontWeight: 800, color: kpi.color, lineHeight: 1,
+                  fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+                }}>{kpi.value}</div>
+                <div style={{
+                  fontSize: 10, color: kpi.color, letterSpacing: '0.15em',
+                  textTransform: 'uppercase', marginTop: 6, opacity: 0.7,
+                  fontWeight: 700,
+                }}>{kpi.label}</div>
+              </div>
+            ))}
+          </div>
+        )
+      })()}
 
       {/* ── TAB BAR ── */}
       <div style={{
@@ -527,7 +474,7 @@ export default function AdminPage() {
         background: 'rgba(6,6,6,0.97)',
         backdropFilter: 'blur(12px)',
       }}>
-        <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 20px', display: 'flex', gap: 0 }}>
+        <div style={{ maxWidth: 1000, margin: '0 auto', padding: '0 28px', display: 'flex', gap: 0 }}>
           {tabs.map(tab => (
             <button
               key={tab.key}
@@ -555,7 +502,7 @@ export default function AdminPage() {
       </div>
 
       {/* ── MAIN ── */}
-      <main style={{ position: 'relative', zIndex: 1, maxWidth: 900, margin: '0 auto', padding: '28px 20px 60px' }}>
+      <main style={{ position: 'relative', zIndex: 1, maxWidth: 1000, margin: '0 auto', padding: '28px 28px 60px' }}>
 
         {/* ══ Tab: Clients ══ */}
         {activeTab === 'clients' && (
@@ -1034,187 +981,6 @@ export default function AdminPage() {
             </div>
           </div>
         )}
-
-        {/* ══ Tab: To-do ══ */}
-        {activeTab === 'todos' && (() => {
-          const today = new Date().toISOString().slice(0, 10)
-          const systemTodos = todos.filter(t => t.is_system)
-          const customTodos = todos.filter(t => !t.is_system)
-          return (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div style={{ borderRadius: 14, border: '1px solid #1E1E1E', background: '#0F0F0F', overflow: 'hidden' }}>
-                {/* Client selector */}
-                <div style={{ padding: '20px', borderBottom: '1px solid #1E1E1E' }}>
-                  <label style={{ display: 'block', fontSize: 10, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#484848', marginBottom: 8 }}>
-                    Client
-                  </label>
-                  <select
-                    value={selectedClientId}
-                    onChange={e => setSelectedClientId(e.target.value)}
-                    style={{ ...inputStyle, cursor: 'pointer' }}
-                  >
-                    <option value="">— Choisir un client —</option>
-                    {clients.map(c => (
-                      <option key={c.id} value={c.id}>
-                        {c.first_name} {c.last_name} ({c.email})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {selectedClientId ? (
-                  <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-                    {/* Client banner */}
-                    <div style={{
-                      display: 'flex', alignItems: 'center', gap: 10,
-                      padding: '10px 14px', borderRadius: 10,
-                      background: 'rgba(58,134,255,0.08)', border: '1px solid rgba(58,134,255,0.2)',
-                    }}>
-                      <InitialsBadge firstName={selectedClient?.first_name ?? ''} lastName={selectedClient?.last_name ?? ''} />
-                      <div>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: '#F5F5F5' }}>
-                          {selectedClient?.first_name} {selectedClient?.last_name}
-                        </div>
-                        <div style={{ fontSize: 10, color: '#3A86FF', letterSpacing: '0.1em', fontWeight: 700 }}>
-                          {todos.length} to-do{todos.length !== 1 ? 's' : ''}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* System todos — completion status */}
-                    {systemTodos.length > 0 && (
-                      <div>
-                        <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#484848', marginBottom: 10 }}>
-                          To-do système (quotidiennes)
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                          {systemTodos.map(todo => {
-                            const doneToday = todo.completed_date === today
-                            return (
-                              <div
-                                key={todo.id}
-                                style={{
-                                  display: 'flex', alignItems: 'center', gap: 12,
-                                  padding: '12px 14px', borderRadius: 10,
-                                  border: `1px solid ${doneToday ? 'rgba(34,197,94,0.25)' : '#1A1A1A'}`,
-                                  background: doneToday ? 'rgba(34,197,94,0.05)' : '#080808',
-                                }}
-                              >
-                                <div style={{
-                                  width: 18, height: 18, borderRadius: 5, flexShrink: 0,
-                                  border: `2px solid ${doneToday ? '#22c55e' : '#333'}`,
-                                  background: doneToday ? '#22c55e' : 'transparent',
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                }}>
-                                  {doneToday && (
-                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#060606" strokeWidth={3}>
-                                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                    </svg>
-                                  )}
-                                </div>
-                                <span style={{ flex: 1, fontSize: 13, color: doneToday ? '#F5F5F5' : '#484848' }}>
-                                  {todo.title}
-                                </span>
-                                <span style={{
-                                  fontSize: 9, fontWeight: 800, letterSpacing: '0.15em',
-                                  textTransform: 'uppercase', padding: '3px 8px', borderRadius: 5,
-                                  background: doneToday ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.04)',
-                                  color: doneToday ? '#22c55e' : '#333',
-                                }}>
-                                  {doneToday ? 'Fait aujourd\'hui' : 'Non fait'}
-                                </span>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Custom todos */}
-                    <div>
-                      <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#484848', marginBottom: 10 }}>
-                        To-do personnalisées
-                      </div>
-
-                      {/* Add todo form */}
-                      <form onSubmit={handleAddTodo} style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
-                        <input
-                          type="text"
-                          placeholder="Titre de la to-do (ex : Lire 20 min ce soir)"
-                          value={newTodoTitle}
-                          onChange={e => setNewTodoTitle(e.target.value)}
-                          required
-                          style={{ ...inputStyle, flex: 1 }}
-                        />
-                        <button
-                          type="submit"
-                          disabled={addingTodo || !newTodoTitle.trim()}
-                          style={{
-                            padding: '10px 18px', borderRadius: 10,
-                            background: '#3A86FF', border: 'none',
-                            cursor: addingTodo || !newTodoTitle.trim() ? 'not-allowed' : 'pointer',
-                            fontSize: 12, fontWeight: 700, letterSpacing: '0.12em',
-                            textTransform: 'uppercase', color: '#FFFFFF',
-                            opacity: addingTodo || !newTodoTitle.trim() ? 0.5 : 1,
-                            transition: 'all 0.15s', whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {addingTodo ? 'Ajout…' : '+ To-do'}
-                        </button>
-                      </form>
-
-                      {todoErr && (
-                        <div style={{ fontSize: 13, color: '#f97373', background: '#1a0000', border: '1px solid #7f1d1d', borderRadius: 10, padding: '10px 14px', marginBottom: 10 }}>{todoErr}</div>
-                      )}
-
-                      {loadingTodos ? (
-                        <div style={{ padding: '24px', textAlign: 'center', color: '#484848', fontSize: 13 }}>Chargement…</div>
-                      ) : customTodos.length === 0 ? (
-                        <div style={{ padding: '24px', textAlign: 'center', color: '#333', fontSize: 13 }}>
-                          Aucune to-do personnalisée.<br />
-                          <span style={{ fontSize: 11 }}>Ajoute une to-do spécifique pour ce client.</span>
-                        </div>
-                      ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                          {customTodos.map(todo => (
-                            <div
-                              key={todo.id}
-                              style={{
-                                display: 'flex', alignItems: 'center', gap: 12,
-                                padding: '12px 14px', borderRadius: 10,
-                                border: '1px solid #1A1A1A', background: '#080808',
-                              }}
-                            >
-                              <span style={{ flex: 1, fontSize: 13, color: '#F5F5F5' }}>{todo.title}</span>
-                              <button
-                                onClick={() => handleDeleteTodo(todo.id)}
-                                title="Supprimer"
-                                style={{
-                                  width: 28, height: 28, borderRadius: 7, border: '1px solid transparent',
-                                  background: 'transparent', cursor: 'pointer',
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  color: '#333', transition: 'all 0.15s', flexShrink: 0,
-                                }}
-                              >
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-                                </svg>
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ padding: '40px 20px', textAlign: 'center', color: '#484848', fontSize: 13 }}>
-                    Sélectionne un client pour gérer ses to-dos.
-                  </div>
-                )}
-              </div>
-            </div>
-          )
-        })()}
 
         {/* ══ Tab: Programme ══ */}
         {activeTab === 'programme' && (
