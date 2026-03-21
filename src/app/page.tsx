@@ -59,127 +59,153 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 relative overflow-hidden">
-      {/* Ambient glow background */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_40%_at_50%_-5%,rgba(58,134,255,0.08)_0%,transparent_60%)]" />
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-p180-accent/20 to-transparent" />
+      {/* Grid pattern background */}
+      <div
+        className="absolute inset-0 opacity-[0.03]"
+        style={{
+          backgroundImage: `linear-gradient(rgba(58,134,255,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(58,134,255,0.3) 1px, transparent 1px)`,
+          backgroundSize: '60px 60px',
+        }}
+      />
 
-      {/* Floating orbs */}
-      <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-p180-accent/[0.03] rounded-full blur-[80px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-48 h-48 bg-p180-accent/[0.02] rounded-full blur-[60px] pointer-events-none" />
+      {/* Ambient glow */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_35%_at_50%_-5%,rgba(58,134,255,0.12)_0%,transparent_60%)]" />
+      <div className="absolute top-1/3 left-1/4 w-72 h-72 bg-p180-accent/[0.04] rounded-full blur-[100px] pointer-events-none animate-pulse" />
+      <div className="absolute bottom-1/3 right-1/4 w-56 h-56 bg-p180-accent/[0.03] rounded-full blur-[80px] pointer-events-none animate-pulse [animation-delay:2s]" />
 
-      <div className="w-full max-w-[380px] relative z-10">
+      {/* Main content */}
+      <div className="w-full max-w-[380px] relative z-10 animate-[fadeSlideUp_0.6s_ease-out]">
         {/* Logo */}
-        <div className="flex justify-center mb-3">
-          <P180Logo size="2xl" />
+        <div className="flex justify-center mb-3 animate-[fadeSlideUp_0.6s_ease-out_0.1s_both]">
+          <P180Logo size="lg" />
         </div>
 
         {/* Tagline */}
         <p
-          className="text-center text-p180-muted text-[11px] uppercase tracking-[4px] mb-10"
+          className="text-center text-p180-muted/70 text-[11px] uppercase tracking-[4px] mb-10 animate-[fadeSlideUp_0.6s_ease-out_0.2s_both]"
           style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
         >
           180 jours pour tout changer
         </p>
 
-        {/* Separator */}
-        <div className="h-px bg-gradient-to-r from-transparent via-p180-accent/30 to-transparent mb-8" />
-
         {/* Form card */}
-        <div className="bg-[#0D0D0D]/80 backdrop-blur-sm border border-white/[0.06] rounded-2xl p-8">
-          <form onSubmit={handleLogin} className="space-y-6">
-            <P180Input
-              label="Email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="ton@email.com"
-              required
-              autoComplete="email"
-            />
+        <div className="relative animate-[fadeSlideUp_0.6s_ease-out_0.3s_both]">
+          {/* Card glow */}
+          <div className="absolute -inset-px rounded-2xl bg-gradient-to-b from-p180-accent/20 via-p180-accent/5 to-transparent pointer-events-none" />
 
-            <P180Input
-              label="Mot de passe"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              required
-              autoComplete="current-password"
-            />
-
-            {error && (
-              <div className="text-[#ff6b6b] text-sm bg-[rgba(220,38,38,0.08)] border border-[rgba(220,38,38,0.2)] rounded-xl px-4 py-3">
-                {error}
-              </div>
-            )}
-
-            <P180Button
-              type="submit"
-              loading={loading}
-              fullWidth
-            >
-              {loading ? 'Connexion...' : 'Se connecter'}
-            </P180Button>
-          </form>
-
-          {/* Forgot password link */}
-          <div className="mt-5 text-center">
-            <button
-              type="button"
-              onClick={() => { setShowForgot(!showForgot); setForgotMessage(''); setForgotError('') }}
-              className="text-xs text-p180-muted/60 hover:text-p180-accent transition-colors uppercase tracking-wider"
-              style={{ fontFamily: "'Barlow Condensed', sans-serif", background: 'none', border: 'none', cursor: 'pointer' }}
-            >
-              Mot de passe oublié ?
-            </button>
-          </div>
-
-          {/* Forgot password form */}
-          {showForgot && (
-            <form onSubmit={handleForgotPassword} className="mt-5 space-y-3 border-t border-white/[0.06] pt-5">
+          <div className="relative bg-[#0A0A0A] border border-white/[0.08] rounded-2xl p-8">
+            <form onSubmit={handleLogin} className="space-y-6">
               <P180Input
-                label="Votre email"
+                label="Email"
                 type="email"
-                value={forgotEmail}
-                onChange={(e) => setForgotEmail(e.target.value)}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="ton@email.com"
                 required
                 autoComplete="email"
               />
 
-              {forgotError && (
-                <div className="text-[#ff6b6b] text-sm bg-[rgba(220,38,38,0.08)] border border-[rgba(220,38,38,0.2)] rounded-xl px-4 py-3">
-                  {forgotError}
-                </div>
-              )}
+              <P180Input
+                label="Mot de passe"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                autoComplete="current-password"
+              />
 
-              {forgotMessage && (
-                <div className="text-[#22C55E] text-sm bg-[rgba(34,197,94,0.08)] border border-[rgba(34,197,94,0.2)] rounded-xl px-4 py-3">
-                  {forgotMessage}
+              {error && (
+                <div className="text-[#ff6b6b] text-sm bg-[rgba(220,38,38,0.08)] border border-[rgba(220,38,38,0.2)] rounded-xl px-4 py-3">
+                  {error}
                 </div>
               )}
 
               <P180Button
                 type="submit"
-                loading={forgotLoading}
+                loading={loading}
                 fullWidth
-                variant="ghost"
-                size="md"
               >
-                {forgotLoading ? 'Envoi...' : 'Envoyer le lien'}
+                {loading ? 'Connexion...' : 'Se connecter'}
               </P180Button>
             </form>
-          )}
+
+            {/* Forgot password link */}
+            <div className="mt-5 text-center">
+              <button
+                type="button"
+                onClick={() => { setShowForgot(!showForgot); setForgotMessage(''); setForgotError('') }}
+                className="text-xs text-p180-muted/50 hover:text-p180-accent transition-colors uppercase tracking-wider"
+                style={{ fontFamily: "'Barlow Condensed', sans-serif", background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                Mot de passe oublié ?
+              </button>
+            </div>
+
+            {/* Forgot password form */}
+            {showForgot && (
+              <form onSubmit={handleForgotPassword} className="mt-5 space-y-3 border-t border-white/[0.06] pt-5">
+                <P180Input
+                  label="Votre email"
+                  type="email"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  placeholder="ton@email.com"
+                  required
+                  autoComplete="email"
+                />
+
+                {forgotError && (
+                  <div className="text-[#ff6b6b] text-sm bg-[rgba(220,38,38,0.08)] border border-[rgba(220,38,38,0.2)] rounded-xl px-4 py-3">
+                    {forgotError}
+                  </div>
+                )}
+
+                {forgotMessage && (
+                  <div className="text-[#22C55E] text-sm bg-[rgba(34,197,94,0.08)] border border-[rgba(34,197,94,0.2)] rounded-xl px-4 py-3">
+                    {forgotMessage}
+                  </div>
+                )}
+
+                <P180Button
+                  type="submit"
+                  loading={forgotLoading}
+                  fullWidth
+                  variant="ghost"
+                  size="md"
+                >
+                  {forgotLoading ? 'Envoi...' : 'Envoyer le lien'}
+                </P180Button>
+              </form>
+            )}
+          </div>
         </div>
 
         {/* Footer */}
-        <p
-          className="text-center text-p180-muted/30 text-[10px] uppercase tracking-[3px] mt-8"
-          style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
-        >
-          Un engagement · Une transformation
-        </p>
+        <div className="mt-10 animate-[fadeSlideUp_0.6s_ease-out_0.5s_both]">
+          <div className="h-px bg-gradient-to-r from-transparent via-p180-accent/20 to-transparent mb-4" />
+          <p
+            className="text-center text-p180-muted/40 text-[11px] uppercase tracking-[3px]"
+            style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
+          >
+            Un engagement · Une transformation
+          </p>
+        </div>
       </div>
+
+      {/* Keyframes */}
+      <style jsx global>{`
+        @keyframes fadeSlideUp {
+          from {
+            opacity: 0;
+            transform: translateY(16px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   )
 }
