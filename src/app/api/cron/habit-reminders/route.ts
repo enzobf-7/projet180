@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
   // Fetch all clients who have completed onboarding
   const { data: onboardings, error: onbErr } = await admin
     .from('onboarding_progress')
-    .select('user_id')
+    .select('client_id')
     .not('completed_at', 'is', null)
 
   if (onbErr) return NextResponse.json({ error: onbErr.message }, { status: 500 })
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
   const errors: string[] = []
 
   for (const onb of onboardings) {
-    const clientId = onb.user_id
+    const clientId = onb.client_id
 
     // Check if this client has any active habits
     const { data: habits } = await admin

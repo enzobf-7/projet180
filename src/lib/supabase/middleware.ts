@@ -65,7 +65,7 @@ export async function updateSession(request: NextRequest) {
       const { data: onboarding } = await admin
         .from('onboarding_progress')
         .select('completed_at')
-        .eq('user_id', user.id)
+        .eq('client_id', user.id)
         .single()
 
       if (!onboarding?.completed_at) {
@@ -88,7 +88,7 @@ export async function updateSession(request: NextRequest) {
       const { data: onboarding } = await admin
         .from('onboarding_progress')
         .select('completed_at')
-        .eq('user_id', user.id)
+        .eq('client_id', user.id)
         .single()
       if (onboarding?.completed_at) {
         const url = request.nextUrl.clone()

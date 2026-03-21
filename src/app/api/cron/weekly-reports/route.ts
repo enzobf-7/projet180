@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
   // 1. Fetch all completed onboardings
   const { data: onboardings, error: onbErr } = await admin
     .from('onboarding_progress')
-    .select('user_id, completed_at')
+    .select('client_id, completed_at')
     .not('completed_at', 'is', null)
 
   if (onbErr) return NextResponse.json({ error: onbErr.message }, { status: 500 })
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
   const errors: string[] = []
 
   for (const onb of onboardings) {
-    const clientId  = onb.user_id
+    const clientId  = onb.client_id
     const startMs   = new Date(onb.completed_at).getTime()
     const weekNumber = Math.floor((now - startMs) / (7 * 86400000)) + 1
 

@@ -49,9 +49,9 @@ export async function POST() {
 
       // Onboarding (completed 45 days ago)
       await supabase.from('onboarding_progress').upsert({
-        user_id: userId, completed_at: startDate,
+        client_id: userId, completed_at: startDate,
         step1_signature_name: demo.firstName, step1_signed_at: startDate,
-      }, { onConflict: 'user_id' })
+      }, { onConflict: 'client_id' })
 
       await supabase.from('programs').upsert({ client_id: userId, content: [] }, { onConflict: 'client_id' })
     }

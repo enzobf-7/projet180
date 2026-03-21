@@ -97,7 +97,7 @@ export default function OnboardingPage() {
       const { data: prog } = await supabase
         .from('onboarding_progress')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('client_id', user.id)
         .single()
       
       if (prog) {
@@ -120,7 +120,7 @@ export default function OnboardingPage() {
         const { data: qr } = await supabase
           .from('questionnaire_responses')
           .select('responses')
-          .eq('user_id', user.id)
+          .eq('client_id', user.id)
           .single()
         if (qr?.responses) {
           setQuestionnaire(prev => ({ ...prev, ...(qr.responses as typeof initialQuestionnaire) }))
@@ -157,7 +157,7 @@ export default function OnboardingPage() {
     await supabase
       .from('onboarding_progress')
       .update(update)
-      .eq('user_id', userId)
+      .eq('client_id', userId)
     setProgress(prev => ({ ...prev, [step]: true }))
   }
 
@@ -168,7 +168,7 @@ export default function OnboardingPage() {
       step1_contract: true,
       step1_signed_at: new Date().toISOString(),
       step1_signature_name: signatureName.trim(),
-    }).eq('user_id', userId)
+    }).eq('client_id', userId)
     // Email Robin — best-effort, non bloquant
     fetch('/api/onboarding/contract-signed', { method: 'POST' }).catch(() => {})
     setProgress(prev => ({ ...prev, step1_contract: true }))
@@ -180,7 +180,7 @@ export default function OnboardingPage() {
   async function handleSubmitQuestionnaire() {
     setLoading(true)
     await supabase.from('questionnaire_responses').upsert({
-      user_id: userId,
+      client_id: userId,
       responses: questionnaire,
       submitted_at: new Date().toISOString()
     })
@@ -189,7 +189,7 @@ export default function OnboardingPage() {
     await supabase.from('onboarding_progress').update({
       step3_whatsapp: true,
       step4_skool: true,
-    }).eq('user_id', userId)
+    }).eq('client_id', userId)
     setProgress(prev => ({ ...prev, step2_questionnaire: true, step3_whatsapp: true, step4_skool: true }))
     setCurrentStep(3)
     setLoading(false)
@@ -210,7 +210,7 @@ export default function OnboardingPage() {
           step5_call: true,
           completed_at: new Date().toISOString(),
         })
-        .eq('user_id', userId)
+        .eq('client_id', userId)
     }
     setRedirecting(true)
   }

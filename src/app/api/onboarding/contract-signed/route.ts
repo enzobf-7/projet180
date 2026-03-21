@@ -21,7 +21,7 @@ export async function POST() {
   const { data: prog } = await admin
     .from('onboarding_progress')
     .select('step1_signature_name, step1_signed_at')
-    .eq('user_id', user.id)
+    .eq('client_id', user.id)
     .single()
 
   const clientName = [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || profile?.email || 'Client'

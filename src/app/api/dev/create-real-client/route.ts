@@ -31,7 +31,7 @@ export async function POST() {
     await admin.from('program_content').delete().eq('client_id', existing.id)
     await admin.from('gamification').delete().eq('client_id', existing.id)
     await admin.from('programs').delete().eq('client_id', existing.id)
-    await admin.from('onboarding_progress').delete().eq('user_id', existing.id)
+    await admin.from('onboarding_progress').delete().eq('client_id', existing.id)
     await admin.from('profiles').delete().eq('id', existing.id)
     await admin.auth.admin.deleteUser(existing.id)
   }

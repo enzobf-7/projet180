@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
   // Fetch all clients with a completed onboarding
   const { data: onboardings, error: onbErr } = await admin
     .from('onboarding_progress')
-    .select('user_id, completed_at')
+    .select('client_id, completed_at')
     .not('completed_at', 'is', null)
 
   if (onbErr) return NextResponse.json({ error: onbErr.message }, { status: 500 })
@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
   const errors: string[] = []
 
   for (const onb of onboardings) {
-    const clientId = onb.user_id
+    const clientId = onb.client_id
     const startDate = new Date(onb.completed_at)
     startDate.setHours(0, 0, 0, 0)
 
