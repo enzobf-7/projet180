@@ -1,122 +1,11 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import P180Logo from '@/components/P180Logo'
 import { P180Input } from '@/components/P180Input'
 import { P180Button } from '@/components/P180Button'
-
-// --- Flow Field Background ---
-function FlowFieldCanvas() {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-
-    let animId: number
-    let w = window.innerWidth
-    let h = window.innerHeight
-    canvas.width = w
-    canvas.height = h
-
-    const TRAIL_COUNT = 80
-    const TRAIL_LENGTH = 60
-    const SPEED = 1.2
-    const SCALE = 0.003
-    let time = 0
-
-    // Simplex-like noise via sine combinations
-    function flowAngle(x: number, y: number, t: number): number {
-      return (
-        Math.sin(x * SCALE * 1.2 + t * 0.3) * 1.5 +
-        Math.cos(y * SCALE * 0.8 + t * 0.2) * 1.3 +
-        Math.sin((x + y) * SCALE * 0.5 + t * 0.15) * 0.8 +
-        Math.cos(x * SCALE * 0.3 - y * SCALE * 0.4 + t * 0.25) * 0.6
-      )
-    }
-
-    type Trail = { points: { x: number; y: number }[]; hue: number; alpha: number; width: number }
-
-    const trails: Trail[] = []
-    for (let i = 0; i < TRAIL_COUNT; i++) {
-      trails.push({
-        points: [{ x: Math.random() * w, y: Math.random() * h }],
-        hue: 210 + Math.random() * 30 - 15, // blue range 195-225
-        alpha: Math.random() * 0.3 + 0.08,
-        width: Math.random() * 2 + 0.5,
-      })
-    }
-
-    function draw() {
-      // Fade previous frame
-      ctx!.fillStyle = 'rgba(5, 5, 5, 0.04)'
-      ctx!.fillRect(0, 0, w, h)
-
-      time += 0.008
-
-      for (const trail of trails) {
-        const last = trail.points[trail.points.length - 1]
-        const angle = flowAngle(last.x, last.y, time)
-
-        const nx = last.x + Math.cos(angle) * SPEED
-        const ny = last.y + Math.sin(angle) * SPEED
-
-        trail.points.push({ x: nx, y: ny })
-        if (trail.points.length > TRAIL_LENGTH) trail.points.shift()
-
-        // Reset if off screen
-        if (nx < -20 || nx > w + 20 || ny < -20 || ny > h + 20) {
-          trail.points = [{ x: Math.random() * w, y: Math.random() * h }]
-        }
-
-        // Draw trail
-        if (trail.points.length > 2) {
-          ctx!.beginPath()
-          ctx!.moveTo(trail.points[0].x, trail.points[0].y)
-
-          for (let j = 1; j < trail.points.length - 1; j++) {
-            const xc = (trail.points[j].x + trail.points[j + 1].x) / 2
-            const yc = (trail.points[j].y + trail.points[j + 1].y) / 2
-            ctx!.quadraticCurveTo(trail.points[j].x, trail.points[j].y, xc, yc)
-          }
-
-          ctx!.strokeStyle = `hsla(${trail.hue}, 80%, 60%, ${trail.alpha})`
-          ctx!.lineWidth = trail.width
-          ctx!.lineCap = 'round'
-          ctx!.stroke()
-        }
-      }
-
-      animId = requestAnimationFrame(draw)
-    }
-
-    // Initial clear
-    ctx.fillStyle = '#050505'
-    ctx.fillRect(0, 0, w, h)
-    draw()
-
-    const onResize = () => {
-      w = window.innerWidth
-      h = window.innerHeight
-      canvas.width = w
-      canvas.height = h
-      ctx!.fillStyle = '#050505'
-      ctx!.fillRect(0, 0, w, h)
-    }
-    window.addEventListener('resize', onResize)
-
-    return () => {
-      cancelAnimationFrame(animId)
-      window.removeEventListener('resize', onResize)
-    }
-  }, [])
-
-  return <canvas ref={canvasRef} className="absolute inset-0" />
-}
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -169,11 +58,12 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 relative overflow-hidden bg-[#050505]">
-      {/* Flow field */}
-      <FlowFieldCanvas />
-
-      {/* Center vignette for readability */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_50%_at_50%_50%,rgba(5,5,5,0.7)_0%,transparent_100%)] pointer-events-none" />
+      {/* Animated gradient blobs — CSS only, subtle */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute w-[500px] h-[500px] rounded-full bg-[rgba(58,134,255,0.06)] blur-[120px] top-[-10%] left-[-5%] animate-[drift1_20s_ease-in-out_infinite]" />
+        <div className="absolute w-[400px] h-[400px] rounded-full bg-[rgba(80,60,255,0.04)] blur-[100px] bottom-[-5%] right-[-5%] animate-[drift2_25s_ease-in-out_infinite]" />
+        <div className="absolute w-[300px] h-[300px] rounded-full bg-[rgba(58,134,255,0.035)] blur-[80px] top-[40%] left-[60%] animate-[drift3_18s_ease-in-out_infinite]" />
+      </div>
 
       {/* Main content */}
       <div className="w-full max-w-[400px] relative z-10">
@@ -184,7 +74,7 @@ export default function LoginPage() {
 
         {/* Tagline */}
         <p
-          className="text-center text-[#8a8a8a] text-xs uppercase tracking-[5px] mb-10 animate-[fadeSlideUp_0.8s_ease-out_0.15s_both]"
+          className="text-center text-[#888] text-xs uppercase tracking-[5px] mb-10 animate-[fadeSlideUp_0.8s_ease-out_0.15s_both]"
           style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
         >
           180 jours pour tout changer
@@ -192,9 +82,9 @@ export default function LoginPage() {
 
         {/* Form card */}
         <div className="relative animate-[fadeSlideUp_0.8s_ease-out_0.3s_both]">
-          <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-b from-p180-accent/20 via-p180-accent/5 to-transparent pointer-events-none" />
+          <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-b from-p180-accent/15 via-transparent to-transparent pointer-events-none" />
 
-          <div className="relative bg-[#0A0A0A]/90 backdrop-blur-xl border border-white/[0.06] rounded-2xl p-8">
+          <div className="relative bg-[#0A0A0A]/90 backdrop-blur-md border border-white/[0.06] rounded-2xl p-8">
             <form onSubmit={handleLogin} className="space-y-6">
               <P180Input
                 label="Email"
@@ -223,7 +113,7 @@ export default function LoginPage() {
               )}
 
               <div className="relative">
-                <div className="absolute inset-0 bg-p180-accent/20 rounded-xl blur-xl pointer-events-none animate-[glowPulse_3s_ease-in-out_infinite]" />
+                <div className="absolute inset-0 bg-p180-accent/15 rounded-xl blur-lg pointer-events-none" />
                 <P180Button type="submit" loading={loading} fullWidth>
                   {loading ? 'Connexion...' : 'Se connecter'}
                 </P180Button>
@@ -275,7 +165,7 @@ export default function LoginPage() {
 
         {/* Footer */}
         <div className="mt-10 animate-[fadeSlideUp_0.8s_ease-out_0.5s_both]">
-          <div className="h-px bg-gradient-to-r from-transparent via-p180-accent/20 to-transparent mb-5" />
+          <div className="h-px bg-gradient-to-r from-transparent via-p180-accent/15 to-transparent mb-5" />
           <p
             className="text-center text-[#555] text-[11px] uppercase tracking-[4px]"
             style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
@@ -290,9 +180,20 @@ export default function LoginPage() {
           from { opacity: 0; transform: translateY(20px); }
           to { opacity: 1; transform: translateY(0); }
         }
-        @keyframes glowPulse {
-          0%, 100% { opacity: 0.4; }
-          50% { opacity: 0.8; }
+        @keyframes drift1 {
+          0%, 100% { transform: translate(0, 0); }
+          33% { transform: translate(80px, 40px); }
+          66% { transform: translate(-30px, 60px); }
+        }
+        @keyframes drift2 {
+          0%, 100% { transform: translate(0, 0); }
+          33% { transform: translate(-60px, -30px); }
+          66% { transform: translate(40px, -50px); }
+        }
+        @keyframes drift3 {
+          0%, 100% { transform: translate(0, 0); }
+          33% { transform: translate(-40px, 30px); }
+          66% { transform: translate(50px, -20px); }
         }
       `}</style>
     </div>
