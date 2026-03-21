@@ -44,14 +44,22 @@ export async function GET(request: NextRequest) {
 
 // POST /api/admin/todos — add custom todo for a client
 export async function POST(request: NextRequest) {
+  // Verify caller is admin
+  const { createClient } = await import('@/lib/supabase/server')
+  const authClient = await createClient()
+  const { data: { user } } = await authClient.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const supabase = createAdminClient()
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  if (profile?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
   const body = await request.json()
   const { client_id, title } = body
 
   if (!client_id || !title?.trim()) {
     return NextResponse.json({ error: 'client_id and title required' }, { status: 400 })
   }
-
-  const supabase = createAdminClient()
   const { data, error } = await supabase
     .from('todos')
     .insert({ client_id, title: title.trim(), is_system: false })
@@ -67,13 +75,21 @@ export async function POST(request: NextRequest) {
 
 // DELETE /api/admin/todos?id=xxx — delete non-system todo only
 export async function DELETE(request: NextRequest) {
+  // Verify caller is admin
+  const { createClient } = await import('@/lib/supabase/server')
+  const authClient = await createClient()
+  const { data: { user } } = await authClient.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const supabase = createAdminClient()
+  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  if (profile?.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
   const { searchParams } = new URL(request.url)
   const id = searchParams.get('id')
   if (!id) {
     return NextResponse.json({ error: 'id required' }, { status: 400 })
   }
-
-  const supabase = createAdminClient()
 
   // Safety: refuse to delete system todos
   const { data: existing } = await supabase
