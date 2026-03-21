@@ -23,8 +23,8 @@ Le code source est dans `projet180-app/` (repo GitHub `enzobf-7/PROJET180`).
 - **Phase** : post-demo (18 mars 2026 — Robin a valide). Pre-production.
 - **URL Vercel** : `https://projet180-enzos-projects-b82cbd89.vercel.app/`
 - **Domaine cible** : `app.projet180.fr`
-- **Migrations** : 8 fichiers a executer dans Supabase avant go-live
-- **En cours** : phase 2 — personnalisation programme, emails centralises, import clients existants
+- **Migrations** : 7/8 executees (program_content_per_client appliquee). Reste a verifier les autres avant go-live
+- **En cours** : phase 3 — refonte admin (KPI, tri inactifs), données test seedées (3 clients), emails dark finalisés
 - **Bloquants connus** : domaine DNS (attente acces Robin), cles Stripe prod, lien iClosed a confirmer
 
 ---
@@ -77,12 +77,11 @@ cd projet180-app && npm run dev   # port 3000
 
 ## DB — Gotchas critiques
 
-### Gotcha #1 — `onboarding_progress` utilise `user_id`, pas `client_id`
+### Gotcha #1 — `onboarding_progress` utilise `client_id`
 ```sql
 -- CORRECT
-.eq('user_id', user.id)
--- FAUX (toutes les autres tables utilisent client_id)
 .eq('client_id', user.id)
+-- La colonne s'appelle client_id (pas user_id)
 ```
 
 ### Gotcha #2 — `habits.created_by` est un enum texte, pas un UUID
@@ -101,8 +100,8 @@ category text check (category in ('habit', 'mission'))
 | Table | FK principale | Notes |
 |-------|-------------|-------|
 | `profiles` | `id` = auth.users.id | `role` ('admin'/'client'), `email`, `first_name`, `last_name` |
-| `app_settings` | — | 4 champs config (Circle, iClosed, contrat PDF, `robin_whatsapp`). WhatsApp groupe retiré, Skool renommé Circle |
-| `onboarding_progress` | `user_id` | Etapes 1-5, `step1_signature_name`, `step1_signed_at`, `completed_at` |
+| `app_settings` | — | 4 champs config : contrat PDF, iClosed, Circle (ex-Skool), `robin_whatsapp`. WhatsApp groupe retiré |
+| `onboarding_progress` | `client_id` | Etapes 1-5, `step1_signature_name`, `step1_signed_at`, `completed_at` |
 | `questionnaire_responses` | `client_id` | 40+ champs reponses formulaire (7 sections) |
 | `programs` | `client_id` | Donnees programme 180j |
 | `habits` | `client_id` | `is_active`, `sort_order`, `category` ('habit'\|'mission'), `created_by` ('admin'\|'client'), `progress_percent`, `description`, `xp_reward`, `period` |
@@ -175,6 +174,7 @@ import { updateSession } from '@/lib/supabase/middleware'   // middleware auth r
 | `/api/dev/create-admin` | POST | Cree compte admin test (contact@alchim-ia.com) |
 | `/api/dev/reset-password` | POST | Reset password admin test |
 | `/api/dev/test-emails` | POST | Envoie les 10 emails de test. `?only=N` pour un seul |
+| `/api/dev/seed-demo-data` | POST | Seed 3 clients test avec habits, todos, missions, logs, gamification, wins |
 
 ---
 
@@ -259,18 +259,22 @@ Tous les crons verifient `Authorization: Bearer <CRON_SECRET>`.
 ## Emails (src/lib/email.ts)
 Utilitaire centralise `sendEmail()` utilise par toutes les routes :
 - `sendEmail({ to, toName, subject, html, senderName? })` — wrapper Brevo API
-- `p180EmailTemplate(body)` — template clair, texte naturel (plus de dark theme)
+- `p180EmailTemplate(body)` — dark theme (#050505), logo centré, gradient bleu, 40px padding unifié
+- `p180CtaButton(href, text)` — CTA bleu #3A86FF, table-centré pour compatibilité email clients
+- Sender : `Robin — PROJET180`
 - Logo heberge sur imgur (TODO: remplacer par URL domaine prod)
-- Utilise dans : webhooks/stripe, admin/clients, cron/habit-reminders, cron/milestone-emails, cron/weekly-reports, onboarding/contract-signed
+- Utilise dans : webhooks/stripe, admin/clients, cron/*, dev/test-emails, dev/create-admin
 
 ### Templates par type
 | Email | Design | CTA |
 |-------|--------|-----|
-| Bienvenue (admin/Stripe) | Logo inline, accès en clair | "Entrer dans l'arene" (noir) |
-| Milestone J30/60/90/180 | Gros "JOUR X", barre progression, bloc stats (XP, meilleure serie, niveau) | "Voir ma progression" (noir) |
-| Rapport hebdo IA | Bordure bleue gauche, texte IA, 3 cartes stats (% habits color-coded vert/orange/rouge, serie, XP semaine) | "Voir mon dashboard" (noir) |
-| Rappel habitudes | Texte simple naturel | "Reprendre aujourd'hui" (noir) |
+| Bienvenue (admin/Stripe) | Dark, logo, accès en clair | "Entrer dans l'arene" (bleu) |
+| Admin bienvenue | Dark, logo, texte perso Enzo pour Robin | "Ton espace admin" (bleu) |
+| Milestone J30/60/90/180 | "JOUR X", barre progression, stats | "Voir ma progression" (bleu) |
+| Rapport hebdo IA | Bordure bleue, texte IA, 3 cartes stats | "Voir mon dashboard" (bleu) |
+| Rappel habitudes | Texte naturel | "Reprendre aujourd'hui" (bleu) |
 | Contrat signe (notif Robin) | Format simple, infos client | — |
+| 4 templates Supabase Auth | Reset PW, Confirm Signup, Magic Link, Change Email — mêmes templates dark | CTA bleu |
 
 ## Flux Stripe
 1. Client paie -> Stripe envoie `checkout.session.completed`
