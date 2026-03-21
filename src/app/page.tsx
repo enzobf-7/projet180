@@ -1,11 +1,101 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import P180Logo from '@/components/P180Logo'
 import { P180Input } from '@/components/P180Input'
 import { P180Button } from '@/components/P180Button'
+
+// --- Particle system ---
+function ParticleCanvas() {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    let animId: number
+    let w = window.innerWidth
+    let h = window.innerHeight
+    canvas.width = w
+    canvas.height = h
+
+    const PARTICLE_COUNT = 60
+    const CONNECTION_DIST = 140
+    const particles: { x: number; y: number; vx: number; vy: number; r: number; o: number }[] = []
+
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      particles.push({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        vx: (Math.random() - 0.5) * 0.4,
+        vy: (Math.random() - 0.5) * 0.4,
+        r: Math.random() * 1.5 + 0.5,
+        o: Math.random() * 0.5 + 0.2,
+      })
+    }
+
+    function draw() {
+      ctx!.clearRect(0, 0, w, h)
+
+      // Draw connections
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x
+          const dy = particles[i].y - particles[j].y
+          const dist = Math.sqrt(dx * dx + dy * dy)
+          if (dist < CONNECTION_DIST) {
+            const alpha = (1 - dist / CONNECTION_DIST) * 0.12
+            ctx!.strokeStyle = `rgba(58, 134, 255, ${alpha})`
+            ctx!.lineWidth = 0.5
+            ctx!.beginPath()
+            ctx!.moveTo(particles[i].x, particles[i].y)
+            ctx!.lineTo(particles[j].x, particles[j].y)
+            ctx!.stroke()
+          }
+        }
+      }
+
+      // Draw & move particles
+      for (const p of particles) {
+        ctx!.beginPath()
+        ctx!.arc(p.x, p.y, p.r, 0, Math.PI * 2)
+        ctx!.fillStyle = `rgba(58, 134, 255, ${p.o})`
+        ctx!.fill()
+
+        p.x += p.vx
+        p.y += p.vy
+
+        if (p.x < 0) p.x = w
+        if (p.x > w) p.x = 0
+        if (p.y < 0) p.y = h
+        if (p.y > h) p.y = 0
+      }
+
+      animId = requestAnimationFrame(draw)
+    }
+
+    draw()
+
+    const onResize = () => {
+      w = window.innerWidth
+      h = window.innerHeight
+      canvas.width = w
+      canvas.height = h
+    }
+    window.addEventListener('resize', onResize)
+
+    return () => {
+      cancelAnimationFrame(animId)
+      window.removeEventListener('resize', onResize)
+    }
+  }, [])
+
+  return <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" />
+}
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -14,7 +104,6 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const router = useRouter()
 
-  // Forgot password state
   const [showForgot, setShowForgot] = useState(false)
   const [forgotEmail, setForgotEmail] = useState('')
   const [forgotLoading, setForgotLoading] = useState(false)
@@ -58,42 +147,48 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 relative overflow-hidden">
-      {/* Grid pattern background */}
-      <div
-        className="absolute inset-0 opacity-[0.03]"
-        style={{
-          backgroundImage: `linear-gradient(rgba(58,134,255,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(58,134,255,0.3) 1px, transparent 1px)`,
-          backgroundSize: '60px 60px',
-        }}
-      />
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 relative overflow-hidden bg-[#050505]">
+      {/* Particle constellation */}
+      <ParticleCanvas />
 
-      {/* Ambient glow */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_50%_35%_at_50%_-5%,rgba(58,134,255,0.12)_0%,transparent_60%)]" />
-      <div className="absolute top-1/3 left-1/4 w-72 h-72 bg-p180-accent/[0.04] rounded-full blur-[100px] pointer-events-none animate-pulse" />
-      <div className="absolute bottom-1/3 right-1/4 w-56 h-56 bg-p180-accent/[0.03] rounded-full blur-[80px] pointer-events-none animate-pulse [animation-delay:2s]" />
+      {/* Central glow */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-p180-accent/[0.06] rounded-full blur-[150px] pointer-events-none" />
+
+      {/* Orbital ring */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] pointer-events-none animate-[orbitSpin_20s_linear_infinite]">
+        <div className="absolute inset-0 rounded-full border border-p180-accent/[0.08]" />
+        {/* Orbiting dot */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-p180-accent/60 rounded-full shadow-[0_0_12px_rgba(58,134,255,0.6)]" />
+      </div>
+
+      {/* Second orbital ring */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] pointer-events-none animate-[orbitSpin_35s_linear_infinite_reverse]">
+        <div className="absolute inset-0 rounded-full border border-p180-accent/[0.04]" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-p180-accent/40 rounded-full shadow-[0_0_8px_rgba(58,134,255,0.4)]" />
+      </div>
 
       {/* Main content */}
-      <div className="w-full max-w-[380px] relative z-10 animate-[fadeSlideUp_0.6s_ease-out]">
+      <div className="w-full max-w-[400px] relative z-10">
         {/* Logo */}
-        <div className="flex justify-center mb-3 animate-[fadeSlideUp_0.6s_ease-out_0.1s_both]">
-          <P180Logo size="lg" />
+        <div className="flex justify-center mb-4 animate-[fadeSlideUp_0.8s_ease-out]">
+          <P180Logo size="xl" />
         </div>
 
         {/* Tagline */}
         <p
-          className="text-center text-p180-muted/70 text-[11px] uppercase tracking-[4px] mb-10 animate-[fadeSlideUp_0.6s_ease-out_0.2s_both]"
+          className="text-center text-[#8a8a8a] text-xs uppercase tracking-[5px] mb-10 animate-[fadeSlideUp_0.8s_ease-out_0.15s_both]"
           style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
         >
           180 jours pour tout changer
         </p>
 
         {/* Form card */}
-        <div className="relative animate-[fadeSlideUp_0.6s_ease-out_0.3s_both]">
-          {/* Card glow */}
-          <div className="absolute -inset-px rounded-2xl bg-gradient-to-b from-p180-accent/20 via-p180-accent/5 to-transparent pointer-events-none" />
+        <div className="relative animate-[fadeSlideUp_0.8s_ease-out_0.3s_both]">
+          {/* Card glow border */}
+          <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-b from-p180-accent/25 via-p180-accent/8 to-transparent pointer-events-none" />
 
-          <div className="relative bg-[#0A0A0A] border border-white/[0.08] rounded-2xl p-8">
+          {/* Card inner */}
+          <div className="relative bg-[#0A0A0A]/90 backdrop-blur-md border border-white/[0.06] rounded-2xl p-8">
             <form onSubmit={handleLogin} className="space-y-6">
               <P180Input
                 label="Email"
@@ -121,28 +216,31 @@ export default function LoginPage() {
                 </div>
               )}
 
-              <P180Button
-                type="submit"
-                loading={loading}
-                fullWidth
-              >
-                {loading ? 'Connexion...' : 'Se connecter'}
-              </P180Button>
+              {/* Button with glow */}
+              <div className="relative">
+                <div className="absolute inset-0 bg-p180-accent/20 rounded-xl blur-xl pointer-events-none animate-pulse" />
+                <P180Button
+                  type="submit"
+                  loading={loading}
+                  fullWidth
+                >
+                  {loading ? 'Connexion...' : 'Se connecter'}
+                </P180Button>
+              </div>
             </form>
 
-            {/* Forgot password link */}
+            {/* Forgot password */}
             <div className="mt-5 text-center">
               <button
                 type="button"
                 onClick={() => { setShowForgot(!showForgot); setForgotMessage(''); setForgotError('') }}
-                className="text-xs text-p180-muted/50 hover:text-p180-accent transition-colors uppercase tracking-wider"
+                className="text-xs text-[#666] hover:text-p180-accent transition-colors uppercase tracking-wider"
                 style={{ fontFamily: "'Barlow Condensed', sans-serif", background: 'none', border: 'none', cursor: 'pointer' }}
               >
                 Mot de passe oublié ?
               </button>
             </div>
 
-            {/* Forgot password form */}
             {showForgot && (
               <form onSubmit={handleForgotPassword} className="mt-5 space-y-3 border-t border-white/[0.06] pt-5">
                 <P180Input
@@ -182,10 +280,10 @@ export default function LoginPage() {
         </div>
 
         {/* Footer */}
-        <div className="mt-10 animate-[fadeSlideUp_0.6s_ease-out_0.5s_both]">
-          <div className="h-px bg-gradient-to-r from-transparent via-p180-accent/20 to-transparent mb-4" />
+        <div className="mt-10 animate-[fadeSlideUp_0.8s_ease-out_0.5s_both]">
+          <div className="h-px bg-gradient-to-r from-transparent via-p180-accent/25 to-transparent mb-5" />
           <p
-            className="text-center text-p180-muted/40 text-[11px] uppercase tracking-[3px]"
+            className="text-center text-[#555] text-[11px] uppercase tracking-[4px]"
             style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
           >
             Un engagement · Une transformation
@@ -193,17 +291,14 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Keyframes */}
       <style jsx global>{`
         @keyframes fadeSlideUp {
-          from {
-            opacity: 0;
-            transform: translateY(16px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes orbitSpin {
+          from { transform: translate(-50%, -50%) rotate(0deg); }
+          to { transform: translate(-50%, -50%) rotate(360deg); }
         }
       `}</style>
     </div>
