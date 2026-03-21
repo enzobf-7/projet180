@@ -140,18 +140,18 @@ export default function LoginPage() {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-p180-accent/[0.04] rounded-full blur-[120px] pointer-events-none" />
 
       <div className="w-full max-w-[400px] relative z-10">
-        <div className="flex justify-center mb-4 animate-[fadeSlideUp_0.8s_ease-out]">
-          <P180Logo size="2xl" />
+        <div className="flex justify-center mb-4 animate-[fadeIn_1.2s_ease-out]">
+          <P180Logo size="xl" />
         </div>
 
         <p
-          className="text-center text-[#888] text-xs uppercase tracking-[5px] mb-10 animate-[fadeSlideUp_0.8s_ease-out_0.15s_both]"
+          className="text-center text-[#888] text-xs uppercase tracking-[5px] mb-10 animate-[fadeIn_1.2s_ease-out_0.3s_both]"
           style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
         >
           180 jours pour tout changer
         </p>
 
-        <div className="relative animate-[fadeSlideUp_0.8s_ease-out_0.3s_both]">
+        <div className="relative animate-[fadeIn_1.2s_ease-out_0.5s_both]">
           <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-b from-p180-accent/15 via-transparent to-transparent pointer-events-none" />
 
           <div className="relative bg-[#0A0A0A]/90 backdrop-blur-md border border-white/[0.06] rounded-2xl p-8">
@@ -192,7 +192,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <div className="mt-10 animate-[fadeSlideUp_0.8s_ease-out_0.5s_both]">
+        <div className="mt-10 animate-[fadeIn_1.2s_ease-out_0.7s_both]">
           <div className="h-px bg-gradient-to-r from-transparent via-p180-accent/15 to-transparent mb-5" />
           <p className="text-center text-[#555] text-[11px] uppercase tracking-[4px]" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
             Un engagement · Une transformation
@@ -201,9 +201,9 @@ export default function LoginPage() {
       </div>
 
       <style jsx global>{`
-        @keyframes fadeSlideUp {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
       `}</style>
     </div>

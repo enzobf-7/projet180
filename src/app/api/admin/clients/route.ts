@@ -27,10 +27,12 @@ export async function GET() {
 
   if (clientIds.length === 0) return NextResponse.json({ clients: [] })
 
-  const [{ data: gamification }, { data: onboarding }, { data: lastLogs }] = await Promise.all([
-    admin.from('gamification').select('client_id, xp_total, level').in('client_id', clientIds),
+  const [{ data: gamification }, { data: onboarding }, { data: lastLogs }, { data: allHabits }, { data: weekLogs }] = await Promise.all([
+    admin.from('gamification').select('client_id, xp_total, level, current_streak').in('client_id', clientIds),
     admin.from('onboarding_progress').select('client_id, completed_at').in('client_id', clientIds),
     admin.from('habit_logs').select('client_id, date').eq('completed', true).in('client_id', clientIds).order('date', { ascending: false }),
+    admin.from('habits').select('client_id, id').eq('is_active', true).in('client_id', clientIds),
+    admin.from('habit_logs').select('client_id, completed').in('client_id', clientIds).gte('date', new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]),
   ])
 
   const gamMap = Object.fromEntries((gamification ?? []).map(g => [g.client_id, g]))
@@ -41,6 +43,27 @@ export async function GET() {
     if (!lastActivityMap[log.client_id]) lastActivityMap[log.client_id] = log.date
   }
 
+  // Habits count per client
+  const habitsCountMap: Record<string, number> = {}
+  for (const h of allHabits ?? []) {
+    habitsCountMap[h.client_id] = (habitsCountMap[h.client_id] ?? 0) + 1
+  }
+
+  // Week completion rate per client
+  const weekCompletedMap: Record<string, number> = {}
+  const weekTotalMap: Record<string, number> = {}
+  for (const l of weekLogs ?? []) {
+    weekTotalMap[l.client_id] = (weekTotalMap[l.client_id] ?? 0) + 1
+    if (l.completed) weekCompletedMap[l.client_id] = (weekCompletedMap[l.client_id] ?? 0) + 1
+  }
+
+  // Classement par XP (desc)
+  const sortedByXp = clientUsers
+    .map(u => ({ id: u.id, xp: gamMap[u.id]?.xp_total ?? 0 }))
+    .sort((a, b) => b.xp - a.xp)
+  const rankMap: Record<string, number> = {}
+  sortedByXp.forEach((u, i) => { rankMap[u.id] = i + 1 })
+
   const clients = clientUsers.map(u => {
     const gam = gamMap[u.id]
     const onb = onbMap[u.id]
@@ -49,6 +72,10 @@ export async function GET() {
       const diff = Math.floor((Date.now() - new Date(onb.completed_at).getTime()) / 86400000) + 1
       jourX = Math.min(Math.max(diff, 1), 180)
     }
+    const total = weekTotalMap[u.id] ?? 0
+    const completed = weekCompletedMap[u.id] ?? 0
+    const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0
+
     return {
       id: u.id,
       email: u.email ?? '',
@@ -56,9 +83,12 @@ export async function GET() {
       last_name: u.user_metadata?.last_name ?? '',
       xp_total: gam?.xp_total ?? 0,
       level: gam?.level ?? 'RECRUE',
+      current_streak: gam?.current_streak ?? 0,
       onboarding_completed: !!onb?.completed_at,
       jourX,
       last_activity: lastActivityMap[u.id] ?? null,
+      completion_rate: completionRate,
+      rank: rankMap[u.id] ?? 0,
     }
   })
 

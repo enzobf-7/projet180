@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import P180Logo from '@/components/P180Logo'
 
 interface AppSettingsRow {
   id: string
@@ -19,9 +20,28 @@ interface Client {
   last_name: string
   xp_total: number
   level: string
+  current_streak: number
   onboarding_completed: boolean
   jourX: number
   last_activity: string | null
+  completion_rate: number
+  rank: number
+}
+
+const PHASES = [
+  { name: 'Destruction', max: 30 },
+  { name: 'Fondation', max: 60 },
+  { name: 'Ignition', max: 90 },
+  { name: 'Accélération', max: 120 },
+  { name: 'Domination', max: 150 },
+  { name: 'Transcendance', max: 180 },
+]
+
+function getPhase(jourX: number) {
+  for (const p of PHASES) {
+    if (jourX <= p.max) return p.name
+  }
+  return 'Transcendance'
 }
 
 interface Habit {
@@ -86,7 +106,7 @@ function InitialsBadge({ firstName, lastName }: { firstName: string; lastName: s
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       flexShrink: 0,
       fontFamily: 'var(--font-barlow, "Barlow Condensed", sans-serif)',
-      fontWeight: 800, fontSize: 13, color: '#3A86FF', letterSpacing: '0.04em',
+      fontWeight: 800, fontSize: 14, color: '#3A86FF', letterSpacing: '0.04em',
     }}>
       {initials || '?'}
     </div>
@@ -358,7 +378,7 @@ export default function AdminPage() {
             background: 'linear-gradient(135deg, #3A86FF, #6098FF)',
             WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
           }}>P180</div>
-          <div style={{ color: '#484848', fontSize: 11, letterSpacing: '0.15em', textTransform: 'uppercase', animation: 'pulse 2s infinite' }}>
+          <div style={{ color: '#484848', fontSize: 14, letterSpacing: '0.15em', textTransform: 'uppercase', animation: 'pulse 2s infinite' }}>
             Chargement…
           </div>
         </div>
@@ -369,7 +389,7 @@ export default function AdminPage() {
   if (!settings) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#060606', color: '#F5F5F5' }}>
-        <p style={{ fontSize: 13, color: '#484848' }}>
+        <p style={{ fontSize: 14, color: '#484848' }}>
           Aucune configuration trouvée. Vérifie la table <code style={{ fontFamily: 'monospace' }}>app_settings</code>.
         </p>
       </div>
@@ -388,7 +408,7 @@ export default function AdminPage() {
 
   const inputStyle: React.CSSProperties = {
     width: '100%', background: '#060606', border: '1px solid #1E1E1E',
-    borderRadius: 10, padding: '10px 14px', fontSize: 13,
+    borderRadius: 10, padding: '10px 14px', fontSize: 14,
     color: '#F5F5F5', outline: 'none', boxSizing: 'border-box',
     fontFamily: 'inherit', transition: 'border-color 0.15s',
   }
@@ -403,6 +423,21 @@ export default function AdminPage() {
         zIndex: 0,
       }} />
 
+      <style>{`
+        .admin-clients-grid {
+          grid-template-columns: repeat(4, 1fr);
+        }
+        @media (max-width: 1200px) {
+          .admin-clients-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (max-width: 900px) {
+          .admin-clients-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 500px) {
+          .admin-clients-grid { grid-template-columns: 1fr; }
+        }
+      `}</style>
+
       {/* ── HEADER ── */}
       <header style={{
         position: 'relative', zIndex: 10,
@@ -410,25 +445,45 @@ export default function AdminPage() {
         background: 'rgba(6,6,6,0.95)',
         backdropFilter: 'blur(12px)',
       }}>
-        <div style={{ maxWidth: 900, margin: '0 auto', padding: '24px 20px 20px' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16 }}>
-            <div>
-              <div style={{
-                fontSize: 10, fontWeight: 800, letterSpacing: '0.35em',
-                textTransform: 'uppercase', color: '#3A86FF', marginBottom: 4,
-              }}>
-                Projet180 — Admin
-              </div>
-              <h1 style={{
-                fontFamily: 'var(--font-barlow, "Barlow Condensed", sans-serif)',
-                fontWeight: 900, fontSize: 32, letterSpacing: '-0.01em',
-                lineHeight: 1, color: '#F5F5F5', margin: 0,
-                textTransform: 'uppercase',
-              }}>
-                Centre de contrôle
-              </h1>
-            </div>
+        <div style={{ padding: '32px 40px 24px', textAlign: 'center', position: 'relative' }}>
+          {/* Logo top left */}
+          <div style={{ position: 'absolute', top: 24, left: 40 }}>
+            <P180Logo size="sm" />
           </div>
+          {/* Bouton déconnexion */}
+          <button
+            onClick={async () => { const supabase = createClient(); await supabase.auth.signOut(); router.push('/') }}
+            style={{
+              position: 'absolute', top: 24, right: 40,
+              background: 'none', border: '1px solid #1E1E1E', borderRadius: 8,
+              color: '#484848', fontSize: 12, padding: '5px 12px', cursor: 'pointer',
+              letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700,
+              transition: 'color 0.15s, border-color 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#EF4444'; e.currentTarget.style.borderColor = '#EF4444' }}
+            onMouseLeave={e => { e.currentTarget.style.color = '#484848'; e.currentTarget.style.borderColor = '#1E1E1E' }}
+          >
+            ⏻ Déconnexion
+          </button>
+          <div style={{
+            fontSize: 14, fontWeight: 800, letterSpacing: '0.35em',
+            textTransform: 'uppercase', color: '#3A86FF', marginBottom: 6,
+          }}>
+            Projet180 — Admin
+          </div>
+          <h1 style={{
+            fontFamily: 'var(--font-barlow, "Barlow Condensed", sans-serif)',
+            fontWeight: 900, fontSize: 38, letterSpacing: '0.04em',
+            lineHeight: 1, color: '#F5F5F5', margin: 0,
+            textTransform: 'uppercase',
+          }}>
+            Centre de contrôle
+          </h1>
+          <div style={{
+            height: 2, margin: '14px auto 0', maxWidth: 280,
+            background: 'linear-gradient(90deg, transparent, #3A86FF, transparent)',
+            borderRadius: 2,
+          }} />
         </div>
       </header>
 
@@ -442,7 +497,7 @@ export default function AdminPage() {
         const checkedToday = activeClients.filter(c => c.last_activity === todayStr).length
         const inactiveCount = activeClients.filter(c => !c.last_activity || c.last_activity < twoDaysAgo).length
         return (
-          <div style={{ maxWidth: 1000, margin: '0 auto', padding: '20px 28px 0', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+          <div style={{ padding: '20px 40px 0', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
             {[
               { value: clients.length, label: 'Total clients', color: '#F5F5F5', bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.08)' },
               { value: checkedToday, label: "Actifs aujourd'hui", color: '#3A86FF', bg: 'rgba(58,134,255,0.08)', border: 'rgba(58,134,255,0.2)' },
@@ -457,7 +512,7 @@ export default function AdminPage() {
                   fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
                 }}>{kpi.value}</div>
                 <div style={{
-                  fontSize: 10, color: kpi.color, letterSpacing: '0.15em',
+                  fontSize: 14, color: kpi.color, letterSpacing: '0.15em',
                   textTransform: 'uppercase', marginTop: 6, opacity: 0.7,
                   fontWeight: 700,
                 }}>{kpi.label}</div>
@@ -474,7 +529,7 @@ export default function AdminPage() {
         background: 'rgba(6,6,6,0.97)',
         backdropFilter: 'blur(12px)',
       }}>
-        <div style={{ maxWidth: 1000, margin: '0 auto', padding: '0 28px', display: 'flex', gap: 0 }}>
+        <div style={{ padding: '0 40px', display: 'flex', gap: 0 }}>
           {tabs.map(tab => (
             <button
               key={tab.key}
@@ -482,7 +537,7 @@ export default function AdminPage() {
               style={{
                 padding: '14px 18px',
                 background: 'none', border: 'none', cursor: 'pointer',
-                fontSize: 11, fontWeight: 700,
+                fontSize: 14, fontWeight: 700,
                 letterSpacing: '0.18em', textTransform: 'uppercase',
                 color: activeTab === tab.key ? '#F5F5F5' : '#484848',
                 position: 'relative',
@@ -502,7 +557,7 @@ export default function AdminPage() {
       </div>
 
       {/* ── MAIN ── */}
-      <main style={{ position: 'relative', zIndex: 1, maxWidth: 1000, margin: '0 auto', padding: '28px 28px 60px' }}>
+      <main style={{ position: 'relative', zIndex: 1, padding: '28px 40px 60px' }}>
 
         {/* ══ Tab: Clients ══ */}
         {activeTab === 'clients' && (
@@ -511,15 +566,6 @@ export default function AdminPage() {
             {/* Clients list */}
             <div style={{ borderRadius: 14, border: '1px solid #1E1E1E', background: '#0F0F0F', overflow: 'hidden' }}>
               {/* Table header */}
-              <div style={{
-                padding: '14px 20px', borderBottom: '1px solid #1E1E1E',
-                display: 'grid', gridTemplateColumns: '1fr auto',
-                alignItems: 'center',
-              }}>
-                <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#484848' }}>
-                  {loadingClients ? 'Chargement…' : `${clients.length} client${clients.length !== 1 ? 's' : ''} inscrits`}
-                </span>
-              </div>
 
               {loadingClients ? (
                 <div style={{ padding: '40px 20px', textAlign: 'center', color: '#484848', fontSize: 13 }}>
@@ -531,7 +577,7 @@ export default function AdminPage() {
                   <div style={{ color: '#484848', fontSize: 13 }}>Aucun client pour l&apos;instant.</div>
                 </div>
               ) : (
-                <div>
+                <div className="admin-clients-grid" style={{ display: 'grid', gap: 12, padding: 4 }}>
                   {[...clients]
                     .sort((a, b) => {
                       const sa = getClientStatus(a)
@@ -539,7 +585,7 @@ export default function AdminPage() {
                       if (sa.priority !== sb.priority) return sa.priority - sb.priority
                       return b.jourX - a.jourX
                     })
-                    .map((c, i) => {
+                    .map((c) => {
                     const progress = Math.min(100, Math.round((c.jourX / 180) * 100))
                     const status = getClientStatus(c)
                     const lastAct = relativeTime(c.last_activity)
@@ -549,75 +595,84 @@ export default function AdminPage() {
                         key={c.id}
                         href={`/admin/client/${c.id}`}
                         style={{
-                          display: 'grid',
-                          gridTemplateColumns: '34px 1fr auto auto',
-                          alignItems: 'center',
-                          gap: 14,
-                          padding: '16px 20px',
-                          borderBottom: i < clients.length - 1 ? '1px solid #111111' : 'none',
-                          background: isInactive ? 'rgba(239,68,68,0.03)' : 'transparent',
-                          transition: 'background 0.15s',
+                          display: 'block',
+                          padding: '16px 18px',
+                          background: '#0F0F0F',
+                          borderRadius: 14,
+                          border: isInactive ? '1px solid rgba(239,68,68,0.3)' : '1px solid #1E1E1E',
                           textDecoration: 'none', color: 'inherit',
-                          borderLeft: isInactive ? '3px solid rgba(239,68,68,0.5)' : '3px solid transparent',
+                          transition: 'border-color 0.15s, background 0.15s',
                         }}
                       >
-                        <InitialsBadge firstName={c.first_name} lastName={c.last_name} />
-
-                        {/* Name + email + progress bar */}
-                        <div style={{ minWidth: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ fontWeight: 600, fontSize: 14, color: '#F5F5F5', lineHeight: 1.2 }}>
-                              {c.first_name} {c.last_name}
-                            </span>
-                            <span style={{
-                              padding: '2px 8px', borderRadius: 5,
-                              background: status.bg, border: `1px solid ${status.border}`,
-                              fontSize: 9, fontWeight: 700,
-                              letterSpacing: '0.1em', textTransform: 'uppercase',
-                              color: status.color, whiteSpace: 'nowrap',
-                            }}>
-                              {status.label}
-                            </span>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
-                            <span style={{ fontSize: 11, color: '#484848', fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {c.email}
-                            </span>
-                            <span style={{ fontSize: 10, color: isInactive ? '#EF4444' : '#333', fontWeight: 500 }}>
-                              · {lastAct}
-                            </span>
-                          </div>
-                          {c.jourX > 0 && (
-                            <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 7 }}>
-                              <div style={{ flex: 1, height: 3, borderRadius: 2, background: '#1E1E1E', overflow: 'hidden', maxWidth: 140 }}>
-                                <div style={{ height: '100%', borderRadius: 2, background: progress >= 100 ? '#22c55e' : '#3A86FF', width: `${progress}%`, transition: 'width 0.3s' }} />
-                              </div>
-                              <span style={{ fontSize: 10, color: '#3A86FF', fontWeight: 700, letterSpacing: '0.05em' }}>
-                                J{c.jourX}/180
+                        {/* Header: avatar + name + badge */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                          <InitialsBadge firstName={c.first_name} lastName={c.last_name} />
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <span style={{ fontWeight: 600, fontSize: 15, color: '#F5F5F5' }}>
+                                {c.first_name} {c.last_name}
+                              </span>
+                              <span style={{
+                                padding: '2px 7px', borderRadius: 5,
+                                background: status.bg, border: `1px solid ${status.border}`,
+                                fontSize: 11, fontWeight: 700,
+                                letterSpacing: '0.1em', textTransform: 'uppercase',
+                                color: status.color,
+                              }}>
+                                {status.label}
                               </span>
                             </div>
-                          )}
-                        </div>
-
-                        {/* XP + Level stacked */}
-                        <div style={{ textAlign: 'right', minWidth: 70 }}>
-                          <div style={{ fontSize: 16, fontWeight: 700, color: '#F5F5F5', fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)', letterSpacing: '-0.02em' }}>
-                            {c.xp_total.toLocaleString('fr')}
-                            <span style={{ fontSize: 9, color: '#484848', marginLeft: 3, letterSpacing: '0.1em' }}>XP</span>
-                          </div>
-                          <div style={{
-                            fontSize: 9, fontWeight: 800,
-                            letterSpacing: '0.1em', textTransform: 'uppercase',
-                            color: '#6098FF', marginTop: 2,
-                          }}>
-                            {c.level || 'N/A'}
+                            <div style={{ fontSize: 14, color: '#484848', marginTop: 2 }}>
+                              {c.jourX > 0 && <span style={{ color: '#6098FF', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginRight: 8 }}>{getPhase(c.jourX)}</span>}
+                              <span style={{ color: isInactive ? '#EF4444' : '#484848' }}>{lastAct}</span>
+                            </div>
                           </div>
                         </div>
 
-                        {/* Arrow */}
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#333" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                        </svg>
+                        {/* Progress bar */}
+                        {c.jourX > 0 && (
+                          <div style={{ marginBottom: 12 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                              <span style={{ fontSize: 14, color: '#3A86FF', fontWeight: 700, fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)' }}>J{c.jourX}/180</span>
+                              <span style={{ fontSize: 14, color: '#484848' }}>{progress}%</span>
+                            </div>
+                            <div style={{ height: 4, borderRadius: 2, background: '#1E1E1E', overflow: 'hidden' }}>
+                              <div style={{ height: '100%', borderRadius: 2, background: progress >= 100 ? '#22c55e' : '#3A86FF', width: `${progress}%`, transition: 'width 0.3s' }} />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Stats row */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+                            <div style={{ textAlign: 'center' }}>
+                              <div style={{ fontSize: 15, fontWeight: 700, color: c.current_streak > 0 ? '#FFA500' : '#333', fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)' }}>
+                                {c.current_streak > 0 ? `🔥${c.current_streak}` : '—'}
+                              </div>
+                              <div style={{ fontSize: 10, color: '#484848', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', marginTop: 1 }}>Streak</div>
+                            </div>
+                            <div style={{ textAlign: 'center' }}>
+                              <div style={{ fontSize: 15, fontWeight: 700, color: c.completion_rate >= 80 ? '#22C55E' : c.completion_rate >= 50 ? '#FFA500' : '#EF4444', fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)' }}>
+                                {c.completion_rate}%
+                              </div>
+                              <div style={{ fontSize: 10, color: '#484848', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', marginTop: 1 }}>Semaine</div>
+                            </div>
+                          </div>
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: 6 }}>
+                              <span style={{ fontSize: 14, fontWeight: 700, color: c.rank <= 3 ? '#C9A84C' : '#484848', fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)' }}>
+                                #{c.rank}
+                              </span>
+                              <span style={{ fontSize: 18, fontWeight: 700, color: '#F5F5F5', fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)', letterSpacing: '-0.02em' }}>
+                                {c.xp_total.toLocaleString('fr')}
+                                <span style={{ fontSize: 11, color: '#484848', marginLeft: 3, letterSpacing: '0.1em' }}>XP</span>
+                              </span>
+                            </div>
+                            <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#6098FF', marginTop: 1 }}>
+                              {c.level || 'N/A'}
+                            </div>
+                          </div>
+                        </div>
                       </a>
                     )
                   })}
@@ -639,7 +694,7 @@ export default function AdminPage() {
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontSize: 14, color: '#3A86FF', fontWeight: 800,
                   }}>+</div>
-                  <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#484848' }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#484848' }}>
                     Ajouter un client manuellement
                   </span>
                 </div>
@@ -648,7 +703,7 @@ export default function AdminPage() {
                 </svg>
               </summary>
               <div style={{ padding: '0 20px 20px', borderTop: '1px solid #1E1E1E' }}>
-                <p style={{ fontSize: 12, color: '#484848', margin: '16px 0 16px', lineHeight: 1.5 }}>
+                <p style={{ fontSize: 14, color: '#484848', margin: '16px 0 16px', lineHeight: 1.5 }}>
                   Crée le compte + envoie l&apos;email de bienvenue. Pour un client existant, indique son Jour X actuel.
                 </p>
                 <form onSubmit={handleAddClient} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -687,10 +742,10 @@ export default function AdminPage() {
                     />
                   </div>
                   {clientErr && (
-                    <div style={{ fontSize: 13, color: '#f97373', background: '#1a0000', border: '1px solid #7f1d1d', borderRadius: 10, padding: '10px 14px' }}>{clientErr}</div>
+                    <div style={{ fontSize: 14, color: '#f97373', background: '#1a0000', border: '1px solid #7f1d1d', borderRadius: 10, padding: '10px 14px' }}>{clientErr}</div>
                   )}
                   {clientMsg && (
-                    <div style={{ fontSize: 13, color: '#22c55e', background: '#001a00', border: '1px solid #16a34a', borderRadius: 10, padding: '10px 14px' }}>{clientMsg}</div>
+                    <div style={{ fontSize: 14, color: '#22c55e', background: '#001a00', border: '1px solid #16a34a', borderRadius: 10, padding: '10px 14px' }}>{clientMsg}</div>
                   )}
                   <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
                     <button
@@ -700,7 +755,7 @@ export default function AdminPage() {
                         padding: '10px 22px', borderRadius: 10,
                         background: addingClient ? '#0A1A3A' : '#3A86FF',
                         border: 'none', cursor: addingClient ? 'not-allowed' : 'pointer',
-                        fontSize: 11, fontWeight: 700, letterSpacing: '0.18em',
+                        fontSize: 14, fontWeight: 700, letterSpacing: '0.18em',
                         textTransform: 'uppercase', color: '#FFFFFF',
                         transition: 'all 0.15s', opacity: addingClient ? 0.6 : 1,
                       }}
@@ -720,7 +775,7 @@ export default function AdminPage() {
             <div style={{ borderRadius: 14, border: '1px solid #1E1E1E', background: '#0F0F0F', overflow: 'hidden' }}>
               {/* Client selector */}
               <div style={{ padding: '20px', borderBottom: '1px solid #1E1E1E' }}>
-                <label style={{ display: 'block', fontSize: 10, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#484848', marginBottom: 8 }}>
+                <label style={{ display: 'block', fontSize: 14, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#484848', marginBottom: 8 }}>
                   Client
                 </label>
                 <select
@@ -747,10 +802,10 @@ export default function AdminPage() {
                   }}>
                     <InitialsBadge firstName={selectedClient?.first_name ?? ''} lastName={selectedClient?.last_name ?? ''} />
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: '#F5F5F5' }}>
+                      <div style={{ fontSize: 15, fontWeight: 600, color: '#F5F5F5' }}>
                         {selectedClient?.first_name} {selectedClient?.last_name}
                       </div>
-                      <div style={{ fontSize: 10, color: '#3A86FF', letterSpacing: '0.1em', fontWeight: 700 }}>
+                      <div style={{ fontSize: 14, color: '#3A86FF', letterSpacing: '0.1em', fontWeight: 700 }}>
                         {habits.filter(h => h.is_active && h.category === 'habit').length} habitude{habits.filter(h => h.is_active && h.category === 'habit').length !== 1 ? 's' : ''} · {habits.filter(h => h.is_active && h.category === 'mission').length} mission{habits.filter(h => h.is_active && h.category === 'mission').length !== 1 ? 's' : ''}
                       </div>
                     </div>
@@ -764,13 +819,13 @@ export default function AdminPage() {
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span style={{ fontSize: 14 }}>✅</span>
-                      <span style={{ fontSize: 12, color: '#6098FF', fontWeight: 600 }}>HABITUDE</span>
-                      <span style={{ fontSize: 12, color: '#484848' }}>= action quotidienne récurrente (checkbox chaque jour)</span>
+                      <span style={{ fontSize: 14, color: '#6098FF', fontWeight: 600 }}>HABITUDE</span>
+                      <span style={{ fontSize: 14, color: '#484848' }}>= action quotidienne récurrente (checkbox chaque jour)</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span style={{ fontSize: 14 }}>🎯</span>
-                      <span style={{ fontSize: 12, color: '#FFA032', fontWeight: 600 }}>MISSION</span>
-                      <span style={{ fontSize: 12, color: '#484848' }}>= objectif one-shot avec progression (0-100%)</span>
+                      <span style={{ fontSize: 14, color: '#FFA032', fontWeight: 600 }}>MISSION</span>
+                      <span style={{ fontSize: 14, color: '#484848' }}>= objectif one-shot avec progression (0-100%)</span>
                     </div>
                   </div>
 
@@ -803,7 +858,7 @@ export default function AdminPage() {
                         padding: '10px 18px', borderRadius: 10,
                         background: '#3A86FF', border: 'none',
                         cursor: addingHabit || !newHabitName.trim() ? 'not-allowed' : 'pointer',
-                        fontSize: 12, fontWeight: 700, letterSpacing: '0.12em',
+                        fontSize: 14, fontWeight: 700, letterSpacing: '0.12em',
                         textTransform: 'uppercase', color: '#FFFFFF',
                         opacity: addingHabit || !newHabitName.trim() ? 0.5 : 1,
                         transition: 'all 0.15s', whiteSpace: 'nowrap',
@@ -814,10 +869,10 @@ export default function AdminPage() {
                   </form>
 
                   {habitErr && (
-                    <div style={{ fontSize: 13, color: '#f97373', background: '#1a0000', border: '1px solid #7f1d1d', borderRadius: 10, padding: '10px 14px' }}>{habitErr}</div>
+                    <div style={{ fontSize: 14, color: '#f97373', background: '#1a0000', border: '1px solid #7f1d1d', borderRadius: 10, padding: '10px 14px' }}>{habitErr}</div>
                   )}
                   {habitMsg && (
-                    <div style={{ fontSize: 13, color: '#22c55e', background: '#001a00', border: '1px solid #16a34a', borderRadius: 10, padding: '10px 14px' }}>{habitMsg}</div>
+                    <div style={{ fontSize: 14, color: '#22c55e', background: '#001a00', border: '1px solid #16a34a', borderRadius: 10, padding: '10px 14px' }}>{habitMsg}</div>
                   )}
 
                   {/* Habits list */}
@@ -827,7 +882,7 @@ export default function AdminPage() {
                     <div style={{ padding: '32px', textAlign: 'center' }}>
                       <div style={{ color: '#484848', fontSize: 13 }}>
                         Aucune mission pour {selectedClient?.first_name}.<br />
-                        <span style={{ fontSize: 11, marginTop: 4, display: 'block' }}>Ajoute sa première mission ci-dessus.</span>
+                        <span style={{ fontSize: 14, marginTop: 4, display: 'block' }}>Ajoute sa première mission ci-dessus.</span>
                       </div>
                     </div>
                   ) : (
@@ -835,7 +890,7 @@ export default function AdminPage() {
                       {/* Habitudes */}
                       {habits.filter(h => h.category === 'habit').length > 0 && (
                         <div style={{ marginBottom: 4 }}>
-                          <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#6098FF', marginBottom: 8 }}>
+                          <div style={{ fontSize: 14, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#6098FF', marginBottom: 8 }}>
                             Habitudes quotidiennes
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -849,18 +904,18 @@ export default function AdminPage() {
                                   background: habit.is_active ? 'rgba(58,134,255,0.04)' : '#080808',
                                 }}
                               >
-                                <span style={{ fontSize: 10, color: '#333', fontWeight: 700, width: 16, textAlign: 'center', flexShrink: 0 }}>
+                                <span style={{ fontSize: 14, color: '#333', fontWeight: 700, width: 16, textAlign: 'center', flexShrink: 0 }}>
                                   {String(i + 1).padStart(2, '0')}
                                 </span>
                                 <span style={{
-                                  flex: 1, fontSize: 13, fontWeight: 500,
+                                  flex: 1, fontSize: 14, fontWeight: 500,
                                   color: habit.is_active ? '#F5F5F5' : '#484848',
                                   textDecoration: habit.is_active ? 'none' : 'line-through',
                                 }}>
                                   {habit.name}
                                 </span>
                                 <span style={{
-                                  padding: '2px 8px', borderRadius: 5, fontSize: 10, fontWeight: 700,
+                                  padding: '2px 8px', borderRadius: 5, fontSize: 14, fontWeight: 700,
                                   letterSpacing: '0.08em', textTransform: 'uppercase', flexShrink: 0,
                                   background: 'rgba(58, 134, 255, 0.12)',
                                   color: '#6098FF',
@@ -872,7 +927,7 @@ export default function AdminPage() {
                                   onClick={() => handleToggleHabit(habit)}
                                   style={{
                                     padding: '4px 12px', borderRadius: 6, border: 'none',
-                                    cursor: 'pointer', fontSize: 10, fontWeight: 700,
+                                    cursor: 'pointer', fontSize: 14, fontWeight: 700,
                                     letterSpacing: '0.1em', textTransform: 'uppercase',
                                     background: habit.is_active ? 'rgba(58,134,255,0.2)' : '#1E1E1E',
                                     color: habit.is_active ? '#6098FF' : '#484848',
@@ -904,7 +959,7 @@ export default function AdminPage() {
                       {/* Missions */}
                       {habits.filter(h => h.category === 'mission').length > 0 && (
                         <div>
-                          <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#FFA032', marginBottom: 8 }}>
+                          <div style={{ fontSize: 14, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#FFA032', marginBottom: 8 }}>
                             Missions
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -918,18 +973,18 @@ export default function AdminPage() {
                                   background: habit.is_active ? 'rgba(255,160,50,0.04)' : '#080808',
                                 }}
                               >
-                                <span style={{ fontSize: 10, color: '#333', fontWeight: 700, width: 16, textAlign: 'center', flexShrink: 0 }}>
+                                <span style={{ fontSize: 14, color: '#333', fontWeight: 700, width: 16, textAlign: 'center', flexShrink: 0 }}>
                                   {String(i + 1).padStart(2, '0')}
                                 </span>
                                 <span style={{
-                                  flex: 1, fontSize: 13, fontWeight: 500,
+                                  flex: 1, fontSize: 14, fontWeight: 500,
                                   color: habit.is_active ? '#F5F5F5' : '#484848',
                                   textDecoration: habit.is_active ? 'none' : 'line-through',
                                 }}>
                                   {habit.name}
                                 </span>
                                 <span style={{
-                                  padding: '2px 8px', borderRadius: 5, fontSize: 10, fontWeight: 700,
+                                  padding: '2px 8px', borderRadius: 5, fontSize: 14, fontWeight: 700,
                                   letterSpacing: '0.08em', textTransform: 'uppercase', flexShrink: 0,
                                   background: 'rgba(255, 160, 50, 0.12)',
                                   color: '#FFA032',
@@ -941,7 +996,7 @@ export default function AdminPage() {
                                   onClick={() => handleToggleHabit(habit)}
                                   style={{
                                     padding: '4px 12px', borderRadius: 6, border: 'none',
-                                    cursor: 'pointer', fontSize: 10, fontWeight: 700,
+                                    cursor: 'pointer', fontSize: 14, fontWeight: 700,
                                     letterSpacing: '0.1em', textTransform: 'uppercase',
                                     background: habit.is_active ? 'rgba(58,134,255,0.2)' : '#1E1E1E',
                                     color: habit.is_active ? '#6098FF' : '#484848',
@@ -988,7 +1043,7 @@ export default function AdminPage() {
             {/* Client selector */}
             <div style={{ borderRadius: 14, border: '1px solid #1E1E1E', background: '#0F0F0F', overflow: 'hidden' }}>
               <div style={{ padding: '20px' }}>
-                <label style={{ display: 'block', fontSize: 10, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#484848', marginBottom: 8 }}>
+                <label style={{ display: 'block', fontSize: 14, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#484848', marginBottom: 8 }}>
                   Programme de
                 </label>
                 <select
@@ -1004,7 +1059,7 @@ export default function AdminPage() {
                   ))}
                 </select>
                 {programClientId && (
-                  <div style={{ fontSize: 11, color: '#484848', marginTop: 8 }}>
+                  <div style={{ fontSize: 14, color: '#484848', marginTop: 8 }}>
                     Programme personnalisé pour {clients.find(c => c.id === programClientId)?.first_name || 'ce client'}.
                   </div>
                 )}
@@ -1013,7 +1068,7 @@ export default function AdminPage() {
 
             {programMsg && (
               <div style={{
-                fontSize: 13,
+                fontSize: 14,
                 color: programMsg.startsWith('Erreur') ? '#f97373' : '#22c55e',
                 background: programMsg.startsWith('Erreur') ? '#1a0000' : '#001a00',
                 border: `1px solid ${programMsg.startsWith('Erreur') ? '#7f1d1d' : '#16a34a'}`,
@@ -1039,7 +1094,7 @@ export default function AdminPage() {
                       width: 28, height: 28, borderRadius: 7,
                       background: 'rgba(58,134,255,0.15)', border: '1px solid rgba(58,134,255,0.3)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 13, fontWeight: 900, color: '#3A86FF',
+                      fontSize: 14, fontWeight: 900, color: '#3A86FF',
                       fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
                     }}>
                       {phase.num}
@@ -1052,7 +1107,7 @@ export default function AdminPage() {
                       }}>
                         Phase {phase.num} — {phase.name}
                       </div>
-                      <div style={{ fontSize: 11, color: '#484848', marginTop: 2 }}>
+                      <div style={{ fontSize: 14, color: '#484848', marginTop: 2 }}>
                         Semaine{phase.weeks.length > 1 ? 's' : ''} {phase.weeks[0]}
                         {phase.weeks.length > 1 ? ` à ${phase.weeks[phase.weeks.length - 1]}` : ''}
                       </div>
@@ -1072,7 +1127,7 @@ export default function AdminPage() {
                         }}>
                           <div style={{ marginBottom: 14 }}>
                             <span style={{
-                              fontSize: 12, fontWeight: 800, letterSpacing: '0.18em',
+                              fontSize: 14, fontWeight: 800, letterSpacing: '0.18em',
                               textTransform: 'uppercase', color: '#3A86FF',
                               fontFamily: 'var(--font-barlow, "Barlow Condensed", sans-serif)',
                             }}>
@@ -1082,7 +1137,7 @@ export default function AdminPage() {
 
                           <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                              <label style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#484848' }}>
+                              <label style={{ fontSize: 14, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#484848' }}>
                                 Titre
                               </label>
                               <input
@@ -1094,7 +1149,7 @@ export default function AdminPage() {
                               />
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                              <label style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#484848' }}>
+                              <label style={{ fontSize: 14, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#484848' }}>
                                 Objectifs
                               </label>
                               <input
@@ -1108,7 +1163,7 @@ export default function AdminPage() {
                           </div>
 
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: 12 }}>
-                            <label style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#484848' }}>
+                            <label style={{ fontSize: 14, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#484848' }}>
                               Focus
                             </label>
                             <input
@@ -1121,7 +1176,7 @@ export default function AdminPage() {
                           </div>
 
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: 12 }}>
-                            <label style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#484848' }}>
+                            <label style={{ fontSize: 14, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#484848' }}>
                               Notes Robin
                             </label>
                             <textarea
@@ -1146,7 +1201,7 @@ export default function AdminPage() {
                                 padding: '8px 20px', borderRadius: 8,
                                 background: isSaving ? '#0A1A3A' : '#3A86FF',
                                 border: 'none', cursor: isSaving ? 'not-allowed' : 'pointer',
-                                fontSize: 10, fontWeight: 700, letterSpacing: '0.15em',
+                                fontSize: 14, fontWeight: 700, letterSpacing: '0.15em',
                                 textTransform: 'uppercase', color: '#FFFFFF',
                                 opacity: isSaving ? 0.6 : 1, transition: 'all 0.15s',
                               }}
@@ -1172,7 +1227,7 @@ export default function AdminPage() {
                 padding: '16px 20px', borderBottom: '1px solid #1E1E1E',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               }}>
-                <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#484848' }}>
+                <span style={{ fontSize: 14, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#484848' }}>
                   Classement par XP
                 </span>
               </div>
@@ -1219,7 +1274,7 @@ export default function AdminPage() {
                             <div style={{ fontWeight: 600, fontSize: 14, color: i < 3 ? '#F5F5F5' : '#aaa' }}>
                               {c.first_name} {c.last_name}
                             </div>
-                            <div style={{ fontSize: 10, color: '#484848', marginTop: 2 }}>
+                            <div style={{ fontSize: 14, color: '#484848', marginTop: 2 }}>
                               J{c.jourX}/180 · {c.level}
                             </div>
                           </div>
@@ -1242,7 +1297,7 @@ export default function AdminPage() {
                             minWidth: 60, textAlign: 'right',
                           }}>
                             {c.xp_total.toLocaleString('fr')}
-                            <span style={{ fontSize: 9, color: '#484848', marginLeft: 2 }}>XP</span>
+                            <span style={{ fontSize: 11, color: '#484848', marginLeft: 2 }}>XP</span>
                           </div>
                         </div>
                       )
@@ -1259,10 +1314,10 @@ export default function AdminPage() {
           <form onSubmit={handleSaveSettings} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{ borderRadius: 14, border: '1px solid #1E1E1E', background: '#0F0F0F', overflow: 'hidden' }}>
               <div style={{ padding: '16px 20px', borderBottom: '1px solid #1E1E1E' }}>
-                <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#484848' }}>
+                <div style={{ fontSize: 14, fontWeight: 800, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#484848' }}>
                   Liens onboarding
                 </div>
-                <div style={{ fontSize: 12, color: '#333', marginTop: 4 }}>
+                <div style={{ fontSize: 14, color: '#333', marginTop: 4 }}>
                   Affichés aux clients pendant leur onboarding. À modifier uniquement si une URL change.
                 </div>
               </div>
@@ -1273,7 +1328,7 @@ export default function AdminPage() {
                   { key: 'skool_link' as keyof AppSettingsRow, label: 'Communauté Circle', placeholder: 'https://community.circle.so/...' },
                 ].map(field => (
                   <div key={field.key} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <label style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#484848' }}>
+                    <label style={{ fontSize: 14, fontWeight: 700, letterSpacing: '0.18em', textTransform: 'uppercase', color: '#484848' }}>
                       {field.label}
                     </label>
                     <input
@@ -1289,10 +1344,10 @@ export default function AdminPage() {
             </div>
 
             {settingsErr && (
-              <div style={{ fontSize: 13, color: '#f97373', background: '#1a0000', border: '1px solid #7f1d1d', borderRadius: 10, padding: '12px 16px' }}>{settingsErr}</div>
+              <div style={{ fontSize: 14, color: '#f97373', background: '#1a0000', border: '1px solid #7f1d1d', borderRadius: 10, padding: '12px 16px' }}>{settingsErr}</div>
             )}
             {settingsMsg && (
-              <div style={{ fontSize: 13, color: '#22c55e', background: '#001a00', border: '1px solid #16a34a', borderRadius: 10, padding: '12px 16px' }}>{settingsMsg}</div>
+              <div style={{ fontSize: 14, color: '#22c55e', background: '#001a00', border: '1px solid #16a34a', borderRadius: 10, padding: '12px 16px' }}>{settingsMsg}</div>
             )}
 
             <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
@@ -1303,7 +1358,7 @@ export default function AdminPage() {
                   padding: '11px 28px', borderRadius: 10,
                   background: savingSettings ? '#0A1A3A' : '#3A86FF',
                   border: 'none', cursor: savingSettings ? 'not-allowed' : 'pointer',
-                  fontSize: 11, fontWeight: 700, letterSpacing: '0.18em',
+                  fontSize: 14, fontWeight: 700, letterSpacing: '0.18em',
                   textTransform: 'uppercase', color: '#FFFFFF',
                   opacity: savingSettings ? 0.6 : 1, transition: 'all 0.15s',
                 }}
@@ -1315,6 +1370,7 @@ export default function AdminPage() {
         )}
 
       </main>
+
     </div>
   )
 }

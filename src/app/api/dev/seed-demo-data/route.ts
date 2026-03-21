@@ -20,6 +20,7 @@ export async function POST() {
     { email: 'alex@demo.projet180.fr', firstName: 'Alexandre', lastName: 'Martin', xp: 2450, streak: 14, longest: 21, level: 3 },
     { email: 'thomas@demo.projet180.fr', firstName: 'Thomas', lastName: 'Dubois', xp: 890, streak: 5, longest: 12, level: 2 },
     { email: 'lucas@demo.projet180.fr', firstName: 'Lucas', lastName: 'Bernard', xp: 4200, streak: 32, longest: 32, level: 4 },
+    { email: 'sophie@demo.projet180.fr', firstName: 'Sophie', lastName: 'Laurent', xp: 1800, streak: 9, longest: 15, level: 3 },
   ]
 
   const clientIds: string[] = []
@@ -80,20 +81,30 @@ export async function POST() {
       },
     }, { onConflict: 'client_id' })
 
-    // Habits (5 habits + 2 missions)
+    // Habits (7 habits + 2 missions)
+    await supabase.from('habit_logs').delete().eq('client_id', userId)
     await supabase.from('habits').delete().eq('client_id', userId)
-    const { data: insertedHabits } = await supabase.from('habits').insert([
-      { client_id: userId, name: 'Douche froide', category: 'habit', is_active: true, sort_order: 1, created_by: 'admin' },
-      { client_id: userId, name: 'Sport 45min', category: 'habit', is_active: true, sort_order: 2, created_by: 'admin' },
-      { client_id: userId, name: 'Lecture 20min', category: 'habit', is_active: true, sort_order: 3, created_by: 'admin' },
-      { client_id: userId, name: 'Méditation 10min', category: 'habit', is_active: true, sort_order: 4, created_by: 'admin' },
-      { client_id: userId, name: 'Zéro écran 1h avant dodo', category: 'habit', is_active: true, sort_order: 5, created_by: 'admin' },
-      { client_id: userId, name: 'Lancer son side project', category: 'mission', is_active: true, sort_order: 6, created_by: 'admin', description: 'Définir et lancer ton projet personnel', period: 'S3-S8', progress_percent: 35, xp_reward: 200 },
-      { client_id: userId, name: 'Challenge social 30j', category: 'mission', is_active: true, sort_order: 7, created_by: 'admin', description: 'Parler à un inconnu chaque jour pendant 30 jours', period: 'S5-S9', progress_percent: 60, xp_reward: 150 },
-    ]).select('id')
+
+    const habitsToInsert = [
+      { client_id: userId, name: 'Préparer to-do de demain', category: 'habit', is_active: true, sort_order: 1, created_by: 'admin' },
+      { client_id: userId, name: 'Poster wins de la semaine', category: 'habit', is_active: true, sort_order: 2, created_by: 'admin' },
+      { client_id: userId, name: 'Douche froide', category: 'habit', is_active: true, sort_order: 3, created_by: 'admin' },
+      { client_id: userId, name: 'Sport 45min', category: 'habit', is_active: true, sort_order: 4, created_by: 'admin' },
+      { client_id: userId, name: 'Lecture 20min', category: 'habit', is_active: true, sort_order: 5, created_by: 'admin' },
+      { client_id: userId, name: 'Méditation 10min', category: 'habit', is_active: true, sort_order: 6, created_by: 'admin' },
+      { client_id: userId, name: 'Zéro écran 1h avant dodo', category: 'habit', is_active: true, sort_order: 7, created_by: 'admin' },
+    ]
+    const missionsToInsert = [
+      { client_id: userId, name: 'Lancer son side project', category: 'mission', is_active: true, sort_order: 8, created_by: 'admin', description: 'Définir et lancer ton projet personnel', period: 'S3-S8', progress_percent: 35, xp_reward: 200 },
+      { client_id: userId, name: 'Challenge social 30j', category: 'mission', is_active: true, sort_order: 9, created_by: 'admin', description: 'Parler à un inconnu chaque jour pendant 30 jours', period: 'S5-S9', progress_percent: 60, xp_reward: 150 },
+    ]
+
+    const { data: h1 } = await supabase.from('habits').insert(habitsToInsert).select('id')
+    const { data: h2 } = await supabase.from('habits').insert(missionsToInsert).select('id')
+    const insertedHabits = [...(h1 ?? []), ...(h2 ?? [])]
 
     // Mark some habits completed today
-    const habitIds = (insertedHabits ?? []).map(h => h.id)
+    const habitIds = insertedHabits.map(h => h.id)
     const logsToInsert = habitIds.slice(0, 3).map(habit_id => ({
       client_id: userId, habit_id, date: today, completed: true,
     }))
