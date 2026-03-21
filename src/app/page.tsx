@@ -7,9 +7,10 @@ import P180Logo from '@/components/P180Logo'
 import { P180Input } from '@/components/P180Input'
 import { P180Button } from '@/components/P180Button'
 
-// --- Aurora Background ---
-function AuroraCanvas() {
+// --- Interactive particle constellation ---
+function ParticleCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const mouse = useRef({ x: -1000, y: -1000 })
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -23,70 +24,81 @@ function AuroraCanvas() {
     canvas.width = w
     canvas.height = h
 
-    // Aurora bands config
-    const bands = [
-      { yBase: 0.25, amplitude: 80, wavelength: 400, speed: 0.0004, color: [58, 134, 255], opacity: 0.07, width: 200 },
-      { yBase: 0.35, amplitude: 60, wavelength: 300, speed: 0.0006, color: [80, 100, 255], opacity: 0.05, width: 160 },
-      { yBase: 0.30, amplitude: 100, wavelength: 500, speed: 0.0003, color: [30, 180, 255], opacity: 0.04, width: 180 },
-      { yBase: 0.45, amplitude: 50, wavelength: 350, speed: 0.0005, color: [100, 60, 255], opacity: 0.035, width: 140 },
-      { yBase: 0.20, amplitude: 70, wavelength: 450, speed: 0.00035, color: [58, 134, 255], opacity: 0.03, width: 220 },
-    ]
+    const PARTICLE_COUNT = 70
+    const CONNECTION_DIST = 150
+    const MOUSE_DIST = 180
+    const particles: { x: number; y: number; vx: number; vy: number; r: number; o: number; baseO: number }[] = []
 
-    let t = 0
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const o = Math.random() * 0.5 + 0.15
+      particles.push({
+        x: Math.random() * w,
+        y: Math.random() * h,
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: (Math.random() - 0.5) * 0.3,
+        r: Math.random() * 1.8 + 0.5,
+        o,
+        baseO: o,
+      })
+    }
 
     function draw() {
       ctx!.clearRect(0, 0, w, h)
-      t++
+      const mx = mouse.current.x
+      const my = mouse.current.y
 
-      for (const band of bands) {
-        ctx!.beginPath()
-
-        const baseY = h * band.yBase
-
-        // Draw the aurora wave
-        for (let x = 0; x <= w; x += 2) {
-          const y = baseY
-            + Math.sin((x / band.wavelength) + t * band.speed * 60) * band.amplitude
-            + Math.sin((x / (band.wavelength * 0.7)) + t * band.speed * 40) * (band.amplitude * 0.5)
-            + Math.cos((x / (band.wavelength * 1.3)) + t * band.speed * 25) * (band.amplitude * 0.3)
-
-          if (x === 0) ctx!.moveTo(x, y)
-          else ctx!.lineTo(x, y)
+      // Connections
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x
+          const dy = particles[i].y - particles[j].y
+          const dist = Math.sqrt(dx * dx + dy * dy)
+          if (dist < CONNECTION_DIST) {
+            const alpha = (1 - dist / CONNECTION_DIST) * 0.12
+            ctx!.strokeStyle = `rgba(58, 134, 255, ${alpha})`
+            ctx!.lineWidth = 0.5
+            ctx!.beginPath()
+            ctx!.moveTo(particles[i].x, particles[i].y)
+            ctx!.lineTo(particles[j].x, particles[j].y)
+            ctx!.stroke()
+          }
         }
+      }
 
-        // Close path to fill downward
-        ctx!.lineTo(w, h)
-        ctx!.lineTo(0, h)
-        ctx!.closePath()
+      // Mouse connections
+      for (const p of particles) {
+        const dx = p.x - mx
+        const dy = p.y - my
+        const dist = Math.sqrt(dx * dx + dy * dy)
+        if (dist < MOUSE_DIST) {
+          const alpha = (1 - dist / MOUSE_DIST) * 0.25
+          ctx!.strokeStyle = `rgba(58, 134, 255, ${alpha})`
+          ctx!.lineWidth = 0.8
+          ctx!.beginPath()
+          ctx!.moveTo(p.x, p.y)
+          ctx!.lineTo(mx, my)
+          ctx!.stroke()
 
-        // Gradient fill
-        const grad = ctx!.createLinearGradient(0, baseY - band.width, 0, baseY + band.width)
-        const [r, g, b] = band.color
-        grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0)`)
-        grad.addColorStop(0.3, `rgba(${r}, ${g}, ${b}, ${band.opacity * 0.6})`)
-        grad.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, ${band.opacity})`)
-        grad.addColorStop(0.7, `rgba(${r}, ${g}, ${b}, ${band.opacity * 0.4})`)
-        grad.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`)
-        ctx!.fillStyle = grad
+          // Brighten near mouse
+          p.o = p.baseO + (1 - dist / MOUSE_DIST) * 0.5
+        } else {
+          p.o += (p.baseO - p.o) * 0.05
+        }
+      }
+
+      // Draw & move
+      for (const p of particles) {
+        ctx!.beginPath()
+        ctx!.arc(p.x, p.y, p.r, 0, Math.PI * 2)
+        ctx!.fillStyle = `rgba(58, 134, 255, ${p.o})`
         ctx!.fill()
 
-        // Draw a bright edge along the wave
-        ctx!.beginPath()
-        for (let x = 0; x <= w; x += 2) {
-          const y = baseY
-            + Math.sin((x / band.wavelength) + t * band.speed * 60) * band.amplitude
-            + Math.sin((x / (band.wavelength * 0.7)) + t * band.speed * 40) * (band.amplitude * 0.5)
-            + Math.cos((x / (band.wavelength * 1.3)) + t * band.speed * 25) * (band.amplitude * 0.3)
-
-          if (x === 0) ctx!.moveTo(x, y)
-          else ctx!.lineTo(x, y)
-        }
-        ctx!.strokeStyle = `rgba(${r}, ${g}, ${b}, ${band.opacity * 1.5})`
-        ctx!.lineWidth = 1.5
-        ctx!.shadowColor = `rgba(${r}, ${g}, ${b}, 0.3)`
-        ctx!.shadowBlur = 20
-        ctx!.stroke()
-        ctx!.shadowBlur = 0
+        p.x += p.vx
+        p.y += p.vy
+        if (p.x < 0) p.x = w
+        if (p.x > w) p.x = 0
+        if (p.y < 0) p.y = h
+        if (p.y > h) p.y = 0
       }
 
       animId = requestAnimationFrame(draw)
@@ -94,21 +106,23 @@ function AuroraCanvas() {
 
     draw()
 
-    const onResize = () => {
-      w = window.innerWidth
-      h = window.innerHeight
-      canvas.width = w
-      canvas.height = h
-    }
+    const onMove = (e: MouseEvent) => { mouse.current = { x: e.clientX, y: e.clientY } }
+    const onLeave = () => { mouse.current = { x: -1000, y: -1000 } }
+    const onResize = () => { w = window.innerWidth; h = window.innerHeight; canvas.width = w; canvas.height = h }
+
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseleave', onLeave)
     window.addEventListener('resize', onResize)
 
     return () => {
       cancelAnimationFrame(animId)
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseleave', onLeave)
       window.removeEventListener('resize', onResize)
     }
   }, [])
 
-  return <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" />
+  return <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" style={{ pointerEvents: 'auto' }} />
 }
 
 export default function LoginPage() {
@@ -161,23 +175,34 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 relative overflow-hidden bg-[#030308]">
-      {/* Aurora */}
-      <AuroraCanvas />
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 relative overflow-hidden bg-[#050505]">
+      {/* Interactive particles */}
+      <ParticleCanvas />
 
-      {/* Soft vignette overlay */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_60%_at_50%_50%,transparent_30%,#030308_100%)] pointer-events-none" />
+      {/* Central glow */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-p180-accent/[0.05] rounded-full blur-[150px] pointer-events-none" />
+
+      {/* Orbital ring */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[480px] h-[480px] pointer-events-none animate-[orbitSpin_25s_linear_infinite]">
+        <div className="absolute inset-0 rounded-full border border-p180-accent/[0.07]" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-p180-accent/50 rounded-full shadow-[0_0_12px_rgba(58,134,255,0.5)]" />
+      </div>
+
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[680px] h-[680px] pointer-events-none animate-[orbitSpin_40s_linear_infinite_reverse]">
+        <div className="absolute inset-0 rounded-full border border-p180-accent/[0.04]" />
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-1.5 h-1.5 bg-p180-accent/30 rounded-full shadow-[0_0_8px_rgba(58,134,255,0.3)]" />
+      </div>
 
       {/* Main content */}
       <div className="w-full max-w-[400px] relative z-10">
-        {/* Logo */}
+        {/* Logo — bigger */}
         <div className="flex justify-center mb-4 animate-[fadeSlideUp_0.8s_ease-out]">
-          <P180Logo size="xl" />
+          <P180Logo size="2xl" />
         </div>
 
         {/* Tagline */}
         <p
-          className="text-center text-[#7a7a8a] text-xs uppercase tracking-[5px] mb-10 animate-[fadeSlideUp_0.8s_ease-out_0.15s_both]"
+          className="text-center text-[#8a8a8a] text-xs uppercase tracking-[5px] mb-10 animate-[fadeSlideUp_0.8s_ease-out_0.15s_both]"
           style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
         >
           180 jours pour tout changer
@@ -185,10 +210,9 @@ export default function LoginPage() {
 
         {/* Form card */}
         <div className="relative animate-[fadeSlideUp_0.8s_ease-out_0.3s_both]">
-          {/* Card glow */}
-          <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-b from-white/[0.12] via-white/[0.04] to-transparent pointer-events-none" />
+          <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-b from-p180-accent/20 via-p180-accent/5 to-transparent pointer-events-none" />
 
-          <div className="relative bg-[#0A0A10]/80 backdrop-blur-xl border border-white/[0.06] rounded-2xl p-8">
+          <div className="relative bg-[#0A0A0A]/85 backdrop-blur-xl border border-white/[0.06] rounded-2xl p-8">
             <form onSubmit={handleLogin} className="space-y-6">
               <P180Input
                 label="Email"
@@ -216,9 +240,8 @@ export default function LoginPage() {
                 </div>
               )}
 
-              {/* CTA with glow */}
               <div className="relative">
-                <div className="absolute inset-0 bg-p180-accent/25 rounded-xl blur-xl pointer-events-none animate-[glowPulse_3s_ease-in-out_infinite]" />
+                <div className="absolute inset-0 bg-p180-accent/20 rounded-xl blur-xl pointer-events-none animate-[glowPulse_3s_ease-in-out_infinite]" />
                 <P180Button type="submit" loading={loading} fullWidth>
                   {loading ? 'Connexion...' : 'Se connecter'}
                 </P180Button>
@@ -270,9 +293,9 @@ export default function LoginPage() {
 
         {/* Footer */}
         <div className="mt-10 animate-[fadeSlideUp_0.8s_ease-out_0.5s_both]">
-          <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mb-5" />
+          <div className="h-px bg-gradient-to-r from-transparent via-p180-accent/20 to-transparent mb-5" />
           <p
-            className="text-center text-[#4a4a55] text-[11px] uppercase tracking-[4px]"
+            className="text-center text-[#555] text-[11px] uppercase tracking-[4px]"
             style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
           >
             Un engagement · Une transformation
@@ -288,6 +311,10 @@ export default function LoginPage() {
         @keyframes glowPulse {
           0%, 100% { opacity: 0.4; }
           50% { opacity: 0.8; }
+        }
+        @keyframes orbitSpin {
+          from { transform: translate(-50%, -50%) rotate(0deg); }
+          to { transform: translate(-50%, -50%) rotate(360deg); }
         }
       `}</style>
     </div>
