@@ -22,10 +22,10 @@ Le code source est dans `projet180-app/` (repo GitHub `enzobf-7/PROJET180`).
 ## Statut actuel
 - **Phase** : post-demo (18 mars 2026 — Robin a valide). Pre-production.
 - **URL Vercel** : `https://projet180-enzos-projects-b82cbd89.vercel.app/`
-- **Domaine cible** : `app.projet180.fr`
-- **Migrations** : 7/8 executees (program_content_per_client appliquee). Reste a verifier les autres avant go-live
-- **En cours** : phase 3 — refonte admin (KPI, tri inactifs), données test seedées (3 clients), emails dark finalisés
-- **Bloquants connus** : domaine DNS (attente acces Robin), cles Stripe prod, lien iClosed a confirmer
+- **Domaine prod** : `https://app.projet180.fr` (CNAME + SSL actifs)
+- **Migrations** : 9 executees (derniere: 20260321_last_login.sql)
+- **En cours** : quasi pret pour go-live. Attente cle Stripe prod + email Robin
+- **Bloquants connus** : `sk_live_` Stripe, email `robin@projet180.fr`, variables Vercel manquantes
 
 ---
 
@@ -99,7 +99,7 @@ category text check (category in ('habit', 'mission'))
 ## DB — Tables
 | Table | FK principale | Notes |
 |-------|-------------|-------|
-| `profiles` | `id` = auth.users.id | `role` ('admin'/'client'), `email`, `first_name`, `last_name` |
+| `profiles` | `id` = auth.users.id | `role` ('admin'/'client'), `email`, `first_name`, `last_name`, `last_login` (timestamptz) |
 | `app_settings` | — | 4 champs config : contrat PDF, iClosed, Circle (ex-Skool), `robin_whatsapp`. WhatsApp groupe retiré |
 | `onboarding_progress` | `client_id` | Etapes 1-5, `step1_signature_name`, `step1_signed_at`, `completed_at` |
 | `questionnaire_responses` | `client_id` | 40+ champs reponses formulaire (7 sections) |
@@ -166,8 +166,8 @@ import { updateSession } from '@/lib/supabase/middleware'   // middleware auth r
 | `/api/webhooks/stripe` | POST | Webhook `checkout.session.completed` -> cree user + profiles + onboarding + programs + gamification + **2 system todos** + email Brevo |
 | `/api/onboarding/contract-signed` | POST | Enregistre signature contrat |
 | `/api/admin/clients` | GET/POST | Liste clients / Creer client manuellement (+ `jour_x` optionnel pour import clients existants) |
-| `/api/admin/habits` | GET/POST | Liste habits / Creer habit |
-| `/api/admin/todos` | GET/POST/DELETE | Liste/Creer/Supprimer todos (impossible de supprimer `is_system=true`) |
+| `/api/admin/habits` | GET/POST | Liste habits / Creer habit. 2 habits systeme auto-crees par client (Preparer to-do demain + Poster wins dimanche) |
+| `/api/admin/todos` | GET/POST/DELETE | Liste/Creer/Supprimer todos (impossible de supprimer `is_system=true`). Auth admin obligatoire |
 | `/api/dev/create-test-user` | POST | Cree user test — desactive si `SEED=false` |
 | `/api/dev/complete-onboarding` | POST | Skip onboarding pour tests |
 | `/api/dev/seed-demo-data` | POST | Donnees de demo pour tests |
@@ -308,6 +308,7 @@ supabase/migrations/20260311_wins.sql
 supabase/migrations/20260311_system_todos.sql
 supabase/migrations/20260316_demo_prep.sql
 supabase/migrations/20260319_program_content_per_client.sql
+supabase/migrations/20260321_last_login.sql
 ```
 
 ## Go-live checklist
