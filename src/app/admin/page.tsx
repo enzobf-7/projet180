@@ -26,6 +26,7 @@ interface Client {
   last_activity: string | null
   completion_rate: number
   rank: number
+  last_login: string | null
 }
 
 const PHASES = [
@@ -494,13 +495,13 @@ export default function AdminPage() {
         const todayStr = today.toISOString().slice(0, 10)
         const twoDaysAgo = new Date(today.getTime() - 2 * 86400000).toISOString().slice(0, 10)
         const activeClients = clients.filter(c => c.onboarding_completed)
-        const checkedToday = activeClients.filter(c => c.last_activity === todayStr).length
+        const checkedToday = activeClients.filter(c => c.last_login && c.last_login.startsWith(todayStr)).length
         const inactiveCount = activeClients.filter(c => !c.last_activity || c.last_activity < twoDaysAgo).length
         return (
           <div style={{ padding: '20px 40px 0', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
             {[
               { value: clients.length, label: 'Total clients', color: '#F5F5F5', bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.08)' },
-              { value: checkedToday, label: "Actifs aujourd'hui", color: '#3A86FF', bg: 'rgba(58,134,255,0.08)', border: 'rgba(58,134,255,0.2)' },
+              { value: checkedToday, label: "Connectés aujourd'hui", color: '#3A86FF', bg: 'rgba(58,134,255,0.08)', border: 'rgba(58,134,255,0.2)' },
               { value: inactiveCount, label: 'Inactifs (2j+)', color: inactiveCount > 0 ? '#EF4444' : '#22C55E', bg: inactiveCount > 0 ? 'rgba(239,68,68,0.08)' : 'rgba(34,197,94,0.08)', border: inactiveCount > 0 ? 'rgba(239,68,68,0.2)' : 'rgba(34,197,94,0.2)' },
             ].map((kpi, i) => (
               <div key={i} style={{
@@ -529,7 +530,7 @@ export default function AdminPage() {
         background: 'rgba(6,6,6,0.97)',
         backdropFilter: 'blur(12px)',
       }}>
-        <div style={{ padding: '0 40px', display: 'flex', gap: 0 }}>
+        <div style={{ padding: '0 40px', display: 'flex', gap: 0, justifyContent: 'center' }}>
           {tabs.map(tab => (
             <button
               key={tab.key}
@@ -599,7 +600,7 @@ export default function AdminPage() {
                           padding: '16px 18px',
                           background: '#0F0F0F',
                           borderRadius: 14,
-                          border: isInactive ? '1px solid rgba(239,68,68,0.3)' : '1px solid #1E1E1E',
+                          border: isInactive ? '1px solid rgba(239,68,68,0.3)' : status.label === 'Actif' ? '1px solid rgba(34,197,94,0.3)' : '1px solid #1E1E1E',
                           textDecoration: 'none', color: 'inherit',
                           transition: 'border-color 0.15s, background 0.15s',
                         }}
@@ -747,7 +748,7 @@ export default function AdminPage() {
                   {clientMsg && (
                     <div style={{ fontSize: 14, color: '#22c55e', background: '#001a00', border: '1px solid #16a34a', borderRadius: 10, padding: '10px 14px' }}>{clientMsg}</div>
                   )}
-                  <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                  <div style={{ display: 'flex', justifyContent: 'center' }}>
                     <button
                       type="submit"
                       disabled={addingClient}
@@ -1193,7 +1194,7 @@ export default function AdminPage() {
                           </div>
 
                           {/* Bouton sauvegarder en bas à gauche */}
-                          <div style={{ marginTop: 14, display: 'flex', justifyContent: 'flex-start' }}>
+                          <div style={{ marginTop: 14, display: 'flex', justifyContent: 'center' }}>
                             <button
                               onClick={() => handleSaveWeek(phase.num, week)}
                               disabled={isSaving}
@@ -1350,7 +1351,7 @@ export default function AdminPage() {
               <div style={{ fontSize: 14, color: '#22c55e', background: '#001a00', border: '1px solid #16a34a', borderRadius: 10, padding: '12px 16px' }}>{settingsMsg}</div>
             )}
 
-            <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
               <button
                 type="submit"
                 disabled={savingSettings}

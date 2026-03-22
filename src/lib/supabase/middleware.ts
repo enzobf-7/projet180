@@ -105,6 +105,12 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // Track last login for clients (fire-and-forget, non-blocking)
+  if (user && (path === '/dashboard' || path === '/admin')) {
+    const admin = createAdminClient()
+    admin.from('profiles').update({ last_login: new Date().toISOString() }).eq('id', user.id).then(() => {})
+  }
+
   // Block clients from admin routes
   if (user && path.startsWith('/admin')) {
     const admin = createAdminClient()

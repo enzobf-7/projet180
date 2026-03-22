@@ -27,12 +27,13 @@ export async function GET() {
 
   if (clientIds.length === 0) return NextResponse.json({ clients: [] })
 
-  const [{ data: gamification }, { data: onboarding }, { data: lastLogs }, { data: allHabits }, { data: weekLogs }] = await Promise.all([
+  const [{ data: gamification }, { data: onboarding }, { data: lastLogs }, { data: allHabits }, { data: weekLogs }, { data: profilesData }] = await Promise.all([
     admin.from('gamification').select('client_id, xp_total, level, current_streak').in('client_id', clientIds),
     admin.from('onboarding_progress').select('client_id, completed_at').in('client_id', clientIds),
     admin.from('habit_logs').select('client_id, date').eq('completed', true).in('client_id', clientIds).order('date', { ascending: false }),
     admin.from('habits').select('client_id, id').eq('is_active', true).in('client_id', clientIds),
     admin.from('habit_logs').select('client_id, completed').in('client_id', clientIds).gte('date', new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0]),
+    admin.from('profiles').select('id, last_login').in('id', clientIds),
   ])
 
   const gamMap = Object.fromEntries((gamification ?? []).map(g => [g.client_id, g]))
@@ -55,6 +56,12 @@ export async function GET() {
   for (const l of weekLogs ?? []) {
     weekTotalMap[l.client_id] = (weekTotalMap[l.client_id] ?? 0) + 1
     if (l.completed) weekCompletedMap[l.client_id] = (weekCompletedMap[l.client_id] ?? 0) + 1
+  }
+
+  // Last login map
+  const loginMap: Record<string, string | null> = {}
+  for (const p of profilesData ?? []) {
+    loginMap[p.id] = p.last_login ?? null
   }
 
   // Classement par XP (desc)
@@ -89,6 +96,7 @@ export async function GET() {
       last_activity: lastActivityMap[u.id] ?? null,
       completion_rate: completionRate,
       rank: rankMap[u.id] ?? 0,
+      last_login: loginMap[u.id] ?? null,
     }
   })
 
